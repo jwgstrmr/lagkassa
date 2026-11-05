@@ -1,9 +1,11 @@
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { queryKeys } from '@/lib/queryKeys'
+import { useTeamStore } from '@/store/teamStore'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { assertRows, useTeamMutation } from '@/features/teams/hooks/useTeamMutation'
-import type { Campaign, CampaignParticipant } from '@/types/database'
+import type { Campaign, CampaignParticipant, CampaignType } from '@/types/database'
 
 export function useCampaigns() {
   const { teamId } = useActiveTeam()
@@ -23,15 +25,41 @@ export function useCampaigns() {
   })
 }
 
+/**
+ * En delad länk kan gå till en händelse i ett annat av ens lag – då byts laget dit.
+ * Sant medan det pågår, så att sidan inte hinner visa att händelsen saknas.
+ */
+export function useSwitchToCampaignTeam(campaignId: string, missing: boolean): boolean {
+  const { teamId, memberships } = useActiveTeam()
+  const setActiveTeam = useTeamStore((s) => s.setActiveTeam)
+  const { data: owner, isLoading } = useQuery({
+    queryKey: queryKeys.campaignTeam(campaignId),
+    enabled: missing && !!campaignId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('campaigns').select('team_id').eq('id', campaignId).maybeSingle()
+      // En trasig länk är inget att larma om – sidan visar att händelsen inte finns
+      if (error) return null
+      return (data?.team_id as string | undefined) ?? null
+    },
+  })
+  const other = missing && !!owner && owner !== teamId && memberships.some((m) => m.team_id === owner)
+
+  useEffect(() => {
+    if (other && owner) setActiveTeam(owner)
+  }, [other, owner, setActiveTeam])
+
+  return missing && (isLoading || other)
+}
+
 export interface CampaignInput {
   id?: string
   name: string
-  category_id: string | null
+  type: CampaignType
   amount_per_child_ore: number | null
   start_date: string | null
   end_date: string | null
   notes: string | null
-  /** Barnen som ska betala – tomt när händelsen saknar belopp per barn */
+  /** Barnen som ska betala in – tomt för typen Övrigt */
   participant_ids: string[]
 }
 
@@ -112,4 +140,29 @@ export function useDeleteCampaign() {
       error: 'Kunde inte ta bort',
     },
   )
+}
+
+export interface OpenDue {
+  team_id: string
+  team_name: string
+  campaign_id: string
+  campaign_name: string
+  child_id: string
+  child_name: string
+  expected_ore: number | null
+  paid_ore: number
+}
+
+/** Barn som inte betalat klart, i alla lag där man är ekonomiansvarig */
+export function useOpenDues() {
+  const { isAdmin } = useActiveTeam()
+  return useQuery({
+    queryKey: queryKeys.openDues,
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('open_dues')
+      if (error) throw error
+      return data as OpenDue[]
+    },
+  })
 }

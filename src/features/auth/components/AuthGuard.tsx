@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthContext } from './AuthProvider'
 
 export function FullScreenSpinner() {
@@ -12,9 +12,18 @@ export function FullScreenSpinner() {
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useAuthContext()
+  const location = useLocation()
 
   if (loading) return <FullScreenSpinner />
-  if (!user) return <Navigate to="/login" replace />
+  // Efter inloggningen går man vidare dit länken pekade, t.ex. en delad händelse
+  if (!user) return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />
 
   return <>{children}</>
+}
+
+/** Dit man ska efter inloggning eller registrering */
+// eslint-disable-next-line react-refresh/only-export-components
+export function returnTo(state: unknown): string {
+  const from = (state as { from?: unknown } | null)?.from
+  return typeof from === 'string' && from.startsWith('/') ? from : '/hem'
 }

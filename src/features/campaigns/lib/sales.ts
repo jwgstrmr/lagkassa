@@ -53,23 +53,14 @@ export function due(
   return { campaign, childId, expected, paid, remaining, done: expected ? !remaining : paid > 0 }
 }
 
-/** "200 kr kvar av 400 kr", "Betalt 400 kr", "Inget registrerat än" … */
+/** "200 kr kvar av 400 kr", "Betalt 400 kr", "300 kr kvar till minst 500 kr", "Inget registrerat än" … */
 export function dueStatus(d: Due): string {
+  // Försäljningens minimum får överskridas – visa vad som faktiskt är inbetalt
+  if (d.expected && d.campaign.type === 'sale') {
+    return d.done ? `Inbetalt ${formatSek(d.paid)}` : `${formatSek(d.remaining)} kvar till minst ${formatSek(d.expected)}`
+  }
   if (d.expected) {
     return d.done ? `Betalt ${formatSek(d.expected)}` : `${formatSek(d.remaining)} kvar av ${formatSek(d.expected)}`
   }
   return d.done ? 'Inbetalning registrerad' : 'Inget registrerat än'
-}
-
-/** Händelser där barnet ska betala in men inte är klart */
-export function openDues(
-  campaigns: Campaign[],
-  childId: string,
-  participants: CampaignParticipant[],
-  transactions: Transaction[],
-): Due[] {
-  return campaigns.flatMap((c) => {
-    const d = due(c, childId, participants, transactions)
-    return d && !d.done ? [d] : []
-  })
 }

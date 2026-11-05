@@ -15,8 +15,8 @@ export function CopySignupLink() {
   }
 
   return (
-    <Button variant="secondary" onClick={copy} aria-label="Kopiera länk till registrering">
-      <Link2 size={18} />
+    <Button variant="secondary" onClick={copy}>
+      <Link2 size={18} className="mr-1" /> Kopiera länk
     </Button>
   )
 }

@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Mail, UserPlus } from 'lucide-react'
+import { Mail, Trash2, UserPlus, UserRound } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { ListSkeleton } from '@/components/ui/Skeleton'
+import { useUIStore } from '@/store/uiStore'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
+import { useAuthContext } from '@/features/auth/components/AuthProvider'
 import { useChildren, useGuardians, useSetGuardianChildren } from '@/features/children/hooks/useChildren'
 import { useInvites, useInviteUser, useProfiles, useTeamAdmins } from '../hooks/useUsers'
 import { diff, displayName } from '../lib/diff'
@@ -29,7 +31,7 @@ function ParentForm({ profile, onDone }: { profile: Profile; onDone: () => void 
     <div className="px-4 pb-6 space-y-4">
       <div>
         <p className="text-white font-medium">{displayName(profile)}</p>
-        {profile.full_name && <p className="text-[#666666] text-sm">{profile.email}</p>}
+        {profile.full_name && <p className="text-[#8A8A8A] text-sm">{profile.email}</p>}
       </div>
       <MultiPicker label="Barn i laget" options={children} selected={selected} onChange={setSelected} />
       <Button
@@ -48,6 +50,7 @@ function InviteParentForm({ invite, onDone }: { invite?: Invite; onDone: () => v
   const { data: children = [] } = useChildren()
   const { data: invites = [] } = useInvites()
   const inviteUser = useInviteUser()
+  const openConfirm = useUIStore((s) => s.openConfirm)
   const teamChildIds = children.map((c) => c.id)
   const [email, setEmail] = useState(invite?.email ?? '')
   const [selected, setSelected] = useState(invite?.child_ids.filter((id) => teamChildIds.includes(id)) ?? [])
@@ -65,7 +68,7 @@ function InviteParentForm({ invite, onDone }: { invite?: Invite; onDone: () => v
       },
       {
         onSuccess: (result) => {
-          toast.success(result === 'added' ? 'Kopplad till barnen' : 'Inbjudan sparad')
+          toast.success(!childIds.length ? 'Inbjudan borttagen' : result === 'added' ? 'Kopplad till barnen' : 'Inbjudan sparad')
           onDone()
         },
       },
@@ -92,8 +95,13 @@ function InviteParentForm({ invite, onDone }: { invite?: Invite; onDone: () => v
       <MultiPicker label="Barn i laget" options={children} selected={selected} onChange={setSelected} />
       <div className="flex gap-2 pt-2">
         {invite && (
-          <Button type="button" variant="danger" onClick={() => send([])} loading={inviteUser.isPending}>
-            Ta bort
+          <Button
+            type="button"
+            variant="danger"
+            aria-label="Ta bort inbjudan"
+            onClick={() => openConfirm('Ta bort inbjudan', `Inbjudan till ${invite.email} tas bort från laget.`, () => send([]))}
+          >
+            <Trash2 size={18} />
           </Button>
         )}
         <Button type="submit" className="flex-1" loading={inviteUser.isPending} disabled={!selected.length}>
@@ -108,6 +116,7 @@ type Sheet = { type: 'parent'; profile: Profile } | { type: 'invite'; invite?: I
 
 export function ParentsTab() {
   const { teamId } = useActiveTeam()
+  const { user } = useAuthContext()
   const { data: children = [], isLoading } = useChildren()
   const { data: guardians = [] } = useGuardians()
   const { data: profiles = [] } = useProfiles()
@@ -124,6 +133,14 @@ export function ParentsTab() {
   const parents = profiles.filter((p) => childrenOf(p.id).length > 0)
   const teamAdmins = profiles.filter((p) => admins.some((a) => a.team_id === teamId && a.profile_id === p.id))
   const teamInvites = invites.filter((i) => i.child_ids.some((id) => teamChildIds.includes(id)))
+  // T.ex. en förälder som registrerat sig med en annan adress än inbjudan
+  const unlinked = profiles.filter(
+    (p) =>
+      p.id !== user?.id &&
+      !p.is_super_admin &&
+      !guardians.some((g) => g.profile_id === p.id) &&
+      !admins.some((a) => a.profile_id === p.id),
+  )
 
   return (
     <div className="p-4 space-y-3">
@@ -145,10 +162,34 @@ export function ParentsTab() {
               className="block w-full px-4 py-3 text-left active:bg-[#1A1A1A]"
             >
               <span className="block text-white text-sm font-medium truncate">{displayName(p)}</span>
-              <span className="block text-[#666666] text-xs truncate">{childNames(childrenOf(p.id))}</span>
+              <span className="block text-[#8A8A8A] text-xs truncate">{childNames(childrenOf(p.id))}</span>
             </button>
           ))}
         </Card>
+      )}
+
+      {unlinked.length > 0 && (
+        <>
+          <h3 className="text-[#A0A0A0] text-xs font-semibold uppercase tracking-wider px-1 pt-2">
+            Konton utan lag
+          </h3>
+          <Card padding={false} className="overflow-hidden divide-y divide-[#222222]">
+            {unlinked.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setSheet({ type: 'parent', profile: p })}
+                className="flex items-center gap-3 w-full px-4 py-3 text-left active:bg-[#1A1A1A]"
+              >
+                <UserRound size={16} className="text-[#8A8A8A] shrink-0" />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-white text-sm truncate">{displayName(p)}</span>
+                  {p.full_name && <span className="block text-[#8A8A8A] text-xs truncate">{p.email}</span>}
+                </span>
+                <span className="text-[#FFD700] text-xs font-medium shrink-0">Koppla barn</span>
+              </button>
+            ))}
+          </Card>
+        </>
       )}
 
       {teamInvites.length > 0 && (
@@ -163,10 +204,10 @@ export function ParentsTab() {
                 onClick={() => setSheet({ type: 'invite', invite: inv })}
                 className="flex items-center gap-3 w-full px-4 py-3 text-left active:bg-[#1A1A1A]"
               >
-                <Mail size={16} className="text-[#666666] shrink-0" />
+                <Mail size={16} className="text-[#8A8A8A] shrink-0" />
                 <span className="flex-1 min-w-0">
                   <span className="block text-white text-sm truncate">{inv.email}</span>
-                  <span className="block text-[#666666] text-xs truncate">{childNames(inv.child_ids)}</span>
+                  <span className="block text-[#8A8A8A] text-xs truncate">{childNames(inv.child_ids)}</span>
                 </span>
               </button>
             ))}
@@ -183,7 +224,7 @@ export function ParentsTab() {
             {teamAdmins.map((p) => (
               <div key={p.id} className="px-4 py-3">
                 <span className="block text-white text-sm truncate">{displayName(p)}</span>
-                {p.full_name && <span className="block text-[#666666] text-xs truncate">{p.email}</span>}
+                {p.full_name && <span className="block text-[#8A8A8A] text-xs truncate">{p.email}</span>}
               </div>
             ))}
           </Card>

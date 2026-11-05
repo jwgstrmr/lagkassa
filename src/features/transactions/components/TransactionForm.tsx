@@ -10,12 +10,7 @@ import { formatSek, oreToInput, parseSek } from '@/lib/money'
 import { useUIStore } from '@/store/uiStore'
 import { useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { useChildren } from '@/features/children/hooks/useChildren'
-import {
-  useAddTransactions,
-  useCategories,
-  useDeleteTransaction,
-  useSaveTransaction,
-} from '../hooks/useTransactions'
+import { useAddTransactions, useDeleteTransaction, useSaveTransaction } from '../hooks/useTransactions'
 import type { Transaction, TransactionKind } from '@/types/database'
 
 interface Props {
@@ -31,7 +26,6 @@ interface Props {
 }
 
 export function TransactionForm({ transaction, campaignId, childId: presetChild, amountOre, defaultKind, onDone }: Props) {
-  const { data: categories = [] } = useCategories()
   const { data: campaigns = [] } = useCampaigns()
   const { data: children = [] } = useChildren()
   const save = useSaveTransaction()
@@ -46,7 +40,7 @@ export function TransactionForm({ transaction, campaignId, childId: presetChild,
     transaction ? oreToInput(transaction.amount_ore) : amountOre ? oreToInput(amountOre) : '',
   )
   const [date, setDate] = useState(transaction?.date ?? format(new Date(), 'yyyy-MM-dd'))
-  const [categoryId, setCategoryId] = useState<string | null>(transaction?.category_id ?? null)
+  const [description, setDescription] = useState(transaction?.description ?? '')
   const [selectedCampaign, setSelectedCampaign] = useState(transaction?.campaign_id ?? campaignId ?? '')
   const [childIds, setChildIds] = useState<string[]>(
     transaction?.child_id ? [transaction.child_id] : presetChild ? [presetChild] : [],
@@ -80,8 +74,7 @@ export function TransactionForm({ transaction, campaignId, childId: presetChild,
       kind,
       amount_ore: ore,
       date,
-      // I en händelse ärvs kategorin från händelsen
-      category_id: selectedCampaign ? null : categoryId,
+      description: description.trim() || null,
       campaign_id: selectedCampaign || null,
     }
     if (selected.length > 1) {
@@ -93,7 +86,7 @@ export function TransactionForm({ transaction, campaignId, childId: presetChild,
 
   function confirmDelete() {
     if (!transaction) return
-    openConfirm('Ta bort transaktion', 'Transaktionen tas bort från kassan.', () =>
+    openConfirm('Ta bort', `Posten på ${formatSek(transaction.amount_ore)} tas bort från kassan. Det går inte att ångra.`, () =>
       remove.mutate(transaction.id, { onSuccess: onDone }),
     )
   }
@@ -105,6 +98,7 @@ export function TransactionForm({ transaction, campaignId, childId: presetChild,
           <button
             key={k}
             type="button"
+            aria-pressed={kind === k}
             onClick={() => setKind(k)}
             className={cn(
               'h-10 rounded-lg text-sm font-semibold transition-colors',
@@ -124,27 +118,9 @@ export function TransactionForm({ transaction, campaignId, childId: presetChild,
         placeholder="0"
         autoFocus={!transaction}
       />
-      <Input label="Datum" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
-      {!selectedCampaign && categories.length > 0 && (
-        <div className="space-y-1.5">
-          <span className="block text-[#A0A0A0] text-sm font-medium">Kategori</span>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c) => (
-              <Chip
-                key={c.id}
-                active={categoryId === c.id}
-                color={c.color}
-                onClick={() => setCategoryId(categoryId === c.id ? null : c.id)}
-              >
-                {c.name}
-              </Chip>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {campaigns.length > 0 && (
+      {/* Öppnat från en händelse är händelsen redan given */}
+      {!campaignId && campaigns.length > 0 && (
         <Select
           label="Händelse"
           value={selectedCampaign}
@@ -156,6 +132,14 @@ export function TransactionForm({ transaction, campaignId, childId: presetChild,
           ))}
         </Select>
       )}
+
+      {/* I en händelse räcker händelsen och barnet – namnet är då valfritt */}
+      <Input
+        label="Namn"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder={selectedCampaign ? 'Valfritt' : kind === 'expense' ? 'Domare' : 'Sponsring'}
+      />
 
       {canHaveChild && children.length > 0 && (
         <div className="space-y-1.5">
@@ -174,6 +158,8 @@ export function TransactionForm({ transaction, campaignId, childId: presetChild,
           </div>
         </div>
       )}
+
+      <Input label="Datum" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
       {error && <p className="text-[#EF4444] text-sm">{error}</p>}
 

@@ -4,14 +4,17 @@ import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Chip } from '@/components/ui/Chip'
 import { Input } from '@/components/ui/Input'
-import { Switch } from '@/components/ui/Switch'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { Textarea } from '@/components/ui/Textarea'
 import { formatSek, oreToInput, parseSek } from '@/lib/money'
 import { useUIStore } from '@/store/uiStore'
-import { useCategories } from '@/features/transactions/hooks/useTransactions'
+import { pluralize } from '@/lib/utils'
 import { useChildren } from '@/features/children/hooks/useChildren'
+import { useTransactions } from '@/features/transactions/hooks/useTransactions'
+import { totals } from '@/features/transactions/lib/finance'
 import { useCampaignParticipants, useDeleteCampaign, useSaveCampaign } from '../hooks/useCampaigns'
-import type { Campaign } from '@/types/database'
+import { CAMPAIGN_TYPES } from '../lib/format'
+import type { Campaign, CampaignType } from '@/types/database'
 
 interface Props {
   campaign?: Campaign
@@ -22,13 +25,12 @@ export function CampaignForm({ campaign, onDone }: Props) {
   const navigate = useNavigate()
   const save = useSaveCampaign()
   const remove = useDeleteCampaign()
-  const { data: categories = [] } = useCategories()
   const { data: children = [] } = useChildren()
   const { data: participants = [] } = useCampaignParticipants()
+  const { data: transactions = [] } = useTransactions()
   const openConfirm = useUIStore((s) => s.openConfirm)
 
   const [name, setName] = useState(campaign?.name ?? '')
-  const [categoryId, setCategoryId] = useState(campaign?.category_id ?? null)
   const [amount, setAmount] = useState(
     campaign?.amount_per_child_ore ? oreToInput(campaign.amount_per_child_ore) : '',
   )
@@ -39,9 +41,11 @@ export function CampaignForm({ campaign, onDone }: Props) {
   const [notes, setNotes] = useState(campaign?.notes ?? '')
   const [error, setError] = useState<string | null>(null)
 
+  // Nya händelser är oftast försäljningar
+  const [type, setType] = useState<CampaignType>(campaign?.type ?? 'sale')
   const saved = participants.filter((p) => p.campaign_id === campaign?.id).map((p) => p.child_id)
-  const [childrenPay, setChildrenPay] = useState(saved.length > 0)
   const participantIds = picked ?? (saved.length ? saved : children.map((c) => c.id))
+  const childrenPay = type !== 'other'
   const ore = parseSek(amount)
 
   function toggleChild(id: string) {
@@ -51,15 +55,20 @@ export function CampaignForm({ campaign, onDone }: Props) {
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
-    if (childrenPay && amount.trim() && !ore) return setError('Beloppet per barn är inte ett belopp')
+    if (type === 'fee' && !ore) return setError('Ange vad varje barn ska betala')
+    if (type === 'sale' && amount.trim() && !ore) return setError('Minimum per barn är inte ett belopp')
     if (childrenPay && !participantIds.length) return setError('Välj vilka barn som ska betala in')
+    // Utan slutdatum blir händelsen aldrig avslutad och ligger kvar som pågående
+    if (childrenPay && !endDate) return setError('Ange ett till-datum när inbetalningarna ska vara klara')
+    if (startDate && endDate && endDate < startDate) return setError('Till-datumet är före från-datumet')
     setError(null)
     save.mutate(
       {
         id: campaign?.id,
         name: name.trim(),
-        category_id: categoryId,
-        amount_per_child_ore: childrenPay ? ore : null,
+        type,
+        // Avgift: exakt belopp. Försäljning: valfritt minimum. Övrigt: inget
+        amount_per_child_ore: type === 'other' ? null : ore,
         start_date: startDate || null,
         end_date: endDate || null,
         notes: notes.trim() || null,
@@ -71,9 +80,14 @@ export function CampaignForm({ campaign, onDone }: Props) {
 
   function confirmDelete() {
     if (!campaign) return
+    const linked = transactions.filter((t) => t.campaign_id === campaign.id)
+    const { income, expense } = totals(linked)
     openConfirm(
       'Ta bort händelse',
-      `"${campaign.name}" tas bort. Dess intäkter och utgifter finns kvar i kassan, utan koppling till händelsen.`,
+      linked.length
+        ? `"${campaign.name}" tas bort tillsammans med ${pluralize(linked.length, 'post', 'poster')} – ` +
+            `${formatSek(income)} i intäkter och ${formatSek(expense)} i kostnader försvinner ur kassan. Det går inte att ångra.`
+        : `"${campaign.name}" tas bort. Det går inte att ångra.`,
       () =>
         remove.mutate(campaign.id, {
           onSuccess: () => {
@@ -86,51 +100,28 @@ export function CampaignForm({ campaign, onDone }: Props) {
 
   return (
     <form onSubmit={submit} className="px-4 pb-6 space-y-4">
+      <SegmentedToggle value={type} options={CAMPAIGN_TYPES} onChange={setType} />
       <Input
         label="Namn"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Bingolotter våren"
+        placeholder={type === 'fee' ? 'Cupavgift' : type === 'sale' ? 'Bingolotter våren' : 'Avslutning'}
         autoFocus={!campaign}
       />
-      {categories.length > 0 && (
-        <div className="space-y-1.5">
-          <span className="block text-[#A0A0A0] text-sm font-medium">Kategori</span>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c) => (
-              <Chip
-                key={c.id}
-                active={categoryId === c.id}
-                color={c.color}
-                onClick={() => setCategoryId(categoryId === c.id ? null : c.id)}
-              >
-                {c.name}
-              </Chip>
-            ))}
-          </div>
-        </div>
-      )}
-      {children.length > 0 && (
-        <Switch
-          checked={childrenPay}
-          onChange={setChildrenPay}
-          label="Följ upp inbetalningar per barn"
-          className="justify-between bg-[#161616] border border-[#222222] rounded-xl px-4 py-3"
-        />
-      )}
       {childrenPay && (
         <Input
-          label="Belopp per barn (kr)"
+          label={type === 'fee' ? 'Belopp per barn (kr)' : 'Minst per barn (kr)'}
           inputMode="decimal"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="Valfritt"
+          placeholder={type === 'fee' ? '0' : 'Valfritt – t.ex. 10 lotter à 50 kr = 500'}
         />
       )}
       {childrenPay && children.length > 0 && (
         <div className="space-y-1.5">
           <span className="block text-[#A0A0A0] text-sm font-medium">
-            Gäller {participantIds.length} barn{ore ? ` · ${formatSek(participantIds.length * ore)}` : ''}
+            {type === 'fee' ? 'Ska betala' : 'Säljer'} · {participantIds.length} barn
+            {ore ? ` · ${type === 'sale' ? 'minst ' : ''}${formatSek(participantIds.length * ore)}` : ''}
           </span>
           <div className="flex flex-wrap gap-2">
             {children.length > 1 && (

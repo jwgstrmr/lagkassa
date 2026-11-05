@@ -19,7 +19,7 @@
   /* Text */
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #A0A0A0;
-  --color-text-muted: #666666;
+  --color-text-muted: #8A8A8A;
 
   /* Semantic */
   --color-danger: #EF4444;
@@ -57,6 +57,11 @@ body {
   overscroll-behavior: none;
 }
 
+/* Datumfält i iOS Safari: har en egen minsta bredd (spräcker två fält i bredd),
+   centrerar texten och krymper när de är tomma */
+input[type="date"] { min-width: 0; min-height: 50px; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+
 /* Safe area helpers */
 .safe-top { padding-top: env(safe-area-inset-top); }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
@@ -87,6 +92,8 @@ html.light .bg-\[\#333333\] { background-color: #D0D0D0; }
 
 html.light .active\:bg-\[\#1A1A1A\]:active { background-color: #EBEBEB; }
 html.light .active\:bg-\[\#222222\]:active { background-color: #E0E0E0; }
+html.light .active\:bg-\[\#2A2A2A\]:active { background-color: #D6D6D6; }
+html.light .placeholder\:text-\[\#8A8A8A\]::placeholder { color: #9A9A9A; }
 
 html.light .border-\[\#222222\] { border-color: #D8D8D8; }
 html.light .border-\[\#2A2A2A\] { border-color: #D0D0D0; }
@@ -96,7 +103,7 @@ html.light .divide-\[\#222222\] > :not(:last-child) { border-color: #D8D8D8; }
 
 html.light .text-white { color: #111111; }
 html.light .text-\[\#A0A0A0\] { color: #5A5A5A; }
-html.light .text-\[\#666666\] { color: #7A7A7A; }
+html.light .text-\[\#8A8A8A\] { color: #6B6B6B; }
 html.light .text-\[\#444444\] { color: #8A8A8A; }
 html.light .text-\[\#FFD700\] { color: #7A5B00; }
 html.light .border-\[\#FFD700\] { border-color: #9A7300; }
@@ -106,4 +113,8 @@ html.light .text-\[\#EF4444\] { color: #B91C1C; }
 html.light .text-\[\#22C55E\] { color: #15803D; }
 html.light .text-\[\#3B82F6\] { color: #1D4ED8; }
 html.light .text-\[\#F97316\] { color: #C2410C; }
+
+/* Intäkter och utgifter */
+html.light .text-\[\#34D399\] { color: #047857; }
+html.light .text-\[\#FB7185\] { color: #BE123C; }
 

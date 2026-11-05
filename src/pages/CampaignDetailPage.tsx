@@ -11,15 +11,16 @@ import { cn } from '@/lib/utils'
 import { formatSek } from '@/lib/money'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { useChildren } from '@/features/children/hooks/useChildren'
-import { useCampaignParticipants, useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
-import { useCategories, useTransactions } from '@/features/transactions/hooks/useTransactions'
+import { useCampaignParticipants, useCampaigns, useSwitchToCampaignTeam } from '@/features/campaigns/hooks/useCampaigns'
+import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { totals } from '@/features/transactions/lib/finance'
-import { due, paidIn } from '@/features/campaigns/lib/sales'
-import { dateRange } from '@/features/campaigns/lib/format'
+import { due, earned, paidIn } from '@/features/campaigns/lib/sales'
+import { campaignTypeLabel, dateRange } from '@/features/campaigns/lib/format'
 import { CampaignForm } from '@/features/campaigns/components/CampaignForm'
 import { BulkIncomeForm } from '@/features/campaigns/components/BulkIncomeForm'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { TransactionForm } from '@/features/transactions/components/TransactionForm'
+import { KIND_TEXT } from '@/features/transactions/lib/colors'
 import type { Transaction, TransactionKind } from '@/types/database'
 
 type Sheet =
@@ -27,11 +28,11 @@ type Sheet =
   | { type: 'bulk' }
   | { type: 'transaction'; transaction?: Transaction; kind?: TransactionKind; childId?: string; amountOre?: number }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, kind }: { label: string; value: string; kind?: TransactionKind }) {
   return (
     <div>
-      <p className="text-[#666666] text-xs">{label}</p>
-      <p className="text-white font-semibold tabular-nums">{value}</p>
+      <p className="text-[#8A8A8A] text-xs">{label}</p>
+      <p className={cn('font-semibold tabular-nums', kind ? KIND_TEXT[kind] : 'text-white')}>{value}</p>
     </div>
   )
 }
@@ -42,12 +43,12 @@ export function CampaignDetailPage() {
   const { data: campaigns, isLoading } = useCampaigns()
   const { data: children = [] } = useChildren()
   const { data: transactions = [] } = useTransactions()
-  const { data: categories = [] } = useCategories()
   const { data: participants = [] } = useCampaignParticipants()
   const [sheet, setSheet] = useState<Sheet | null>(null)
 
   const campaign = campaigns?.find((c) => c.id === id)
-  if (isLoading) return <><TopBar showBack /><ListSkeleton /></>
+  const switching = useSwitchToCampaignTeam(id, !isLoading && !campaign)
+  if (isLoading || switching) return <><TopBar showBack /><ListSkeleton /></>
   if (!campaign) {
     return (
       <>
@@ -59,28 +60,29 @@ export function CampaignDetailPage() {
 
   const linked = transactions.filter((t) => t.campaign_id === id)
   const sum = totals(linked)
-  const range = dateRange(campaign)
+  const subtitle = [campaignTypeLabel(campaign.type), dateRange(campaign)].filter(Boolean).join(' · ')
 
-  // Betalar barnen in visas de som ska betala, plus andra barn som ändå har något bokfört
-  const childrenPay = participants.some((p) => p.campaign_id === id)
+  // De som ska betala, plus barn som ändå har något bokfört. Övrigt följs inte upp per barn,
+  // så där visas bara barn med inbetalningar – annars ser 0 kr ut som en obetald skuld
+  const childrenPay = campaign.type !== 'other'
   const rows = children
     .map((child) => ({ child, due: due(campaign, child.id, participants, transactions) }))
-    .filter(({ child, due: d }) => !childrenPay || d || linked.some((t) => t.child_id === child.id))
+    .filter(({ child, due: d }) => d || linked.some((t) => t.child_id === child.id))
 
   const sheetTitle =
     sheet?.type === 'campaign'
       ? 'Ändra händelse'
       : sheet?.type === 'bulk'
-        ? 'Inbetalningar'
+        ? 'Inbetalningar per barn'
         : sheet?.transaction
-          ? 'Ändra transaktion'
-          : sheet?.childId ? 'Ny intäkt' : 'Lägg till'
+          ? 'Ändra'
+          : sheet?.childId ? 'Ny inbetalning' : 'Lägg till'
 
   return (
     <div>
       <TopBar
         title={campaign.name}
-        subtitle={range ?? undefined}
+        subtitle={subtitle}
         showBack
         actions={
           isAdmin && (
@@ -104,10 +106,11 @@ export function CampaignDetailPage() {
         )}
 
         <Card>
+          <h2 className="text-white font-semibold mb-3">Totalt för hela laget</h2>
           <div className="grid grid-cols-3 gap-2">
-            <Stat label="Intäkter" value={formatSek(sum.income)} />
-            <Stat label="Kostnader" value={formatSek(sum.expense)} />
-            <Stat label="Netto" value={formatSek(sum.net)} />
+            <Stat label="Intäkter" value={formatSek(sum.income)} kind="income" />
+            <Stat label="Kostnader" value={formatSek(sum.expense)} kind="expense" />
+            <Stat label="Till kassan" value={formatSek(sum.net)} />
           </div>
         </Card>
 
@@ -119,7 +122,7 @@ export function CampaignDetailPage() {
               </h2>
               {isAdmin && (
                 <Button size="sm" variant="secondary" onClick={() => setSheet({ type: 'bulk' })}>
-                  <Users size={16} className="mr-1" /> Alla barn
+                  <Users size={16} className="mr-1" /> Fyll i per barn
                 </Button>
               )}
             </div>
@@ -140,8 +143,13 @@ export function CampaignDetailPage() {
                     <span className="min-w-0">
                       <span className="block text-white text-sm truncate">{child.name}</span>
                       {d && !d.done && (
-                        <span className="block text-[#666666] text-xs">
+                        <span className="block text-[#8A8A8A] text-xs">
                           {d.expected ? `${formatSek(d.remaining)} kvar` : 'Inget registrerat'}
+                        </span>
+                      )}
+                      {!isAdmin && paid > 0 && (
+                        <span className="block text-[#8A8A8A] text-xs">
+                          Intjänat till kassan {formatSek(earned(transactions, child.id, id))}
                         </span>
                       )}
                     </span>
@@ -149,14 +157,18 @@ export function CampaignDetailPage() {
                       <span
                         className={cn(
                           'text-sm tabular-nums whitespace-nowrap',
-                          d.done ? 'text-[#22C55E] font-semibold' : d.paid ? 'text-white font-semibold' : 'text-[#666666]',
+                          d.done ? 'text-[#22C55E] font-semibold' : d.paid ? 'text-white font-semibold' : 'text-[#8A8A8A]',
                         )}
                       >
                         {formatSek(d.paid)}
-                        {d.expected ? <span className="text-[#666666] font-normal"> / {formatSek(d.expected)}</span> : null}
+                        {d.expected ? (
+                          <span className="text-[#8A8A8A] font-normal">
+                            {' / '}{campaign.type === 'sale' ? 'minst ' : ''}{formatSek(d.expected)}
+                          </span>
+                        ) : null}
                       </span>
                     ) : (
-                      <span className={cn('text-sm tabular-nums', paid ? 'text-white font-semibold' : 'text-[#666666]')}>
+                      <span className={cn('text-sm tabular-nums', paid ? 'text-white font-semibold' : 'text-[#8A8A8A]')}>
                         {formatSek(paid)}
                       </span>
                     )}
@@ -167,37 +179,41 @@ export function CampaignDetailPage() {
           </Card>
         )}
 
-        <Card padding={false} className="overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">
-            <h2 className="text-white font-semibold">Intäkter och utgifter</h2>
-            {isAdmin && (
+        {/* Föräldrar ser bara summorna – raderna är andras barns inbetalningar utan namn */}
+        {isAdmin && (
+          <Card padding={false} className="overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">
+              <h2 className="text-white font-semibold">Intäkter och kostnader</h2>
               <Button size="sm" variant="secondary" onClick={() => setSheet({ type: 'transaction' })}>
                 <Plus size={16} className="mr-1" /> Lägg till
               </Button>
-            )}
-          </div>
-          {linked.length === 0 ? (
-            <p className="text-[#666666] text-sm px-4 pb-4">Inget bokfört än</p>
-          ) : (
-            <div className="divide-y divide-[#222222]">
-              {linked.map((t) => (
-                <TransactionRow
-                  key={t.id}
-                  transaction={t}
-                  category={categories.find((c) => c.id === t.category_id)}
-                  child={children.find((c) => c.id === t.child_id)}
-                  onClick={isAdmin ? () => setSheet({ type: 'transaction', transaction: t }) : undefined}
-                />
-              ))}
             </div>
-          )}
-        </Card>
+            {linked.length === 0 ? (
+              <p className="text-[#8A8A8A] text-sm px-4 pb-4">Inget bokfört än</p>
+            ) : (
+              <div className="divide-y divide-[#222222]">
+                {linked.map((t) => (
+                  <TransactionRow
+                    key={t.id}
+                    transaction={t}
+                    child={children.find((c) => c.id === t.child_id)}
+                    onClick={() => setSheet({ type: 'transaction', transaction: t })}
+                  />
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
       </div>
 
       <BottomSheet isOpen={sheet !== null} onClose={() => setSheet(null)} title={sheetTitle}>
         {sheet?.type === 'campaign' && <CampaignForm campaign={campaign} onDone={() => setSheet(null)} />}
         {sheet?.type === 'bulk' && (
-          <BulkIncomeForm campaign={campaign} children={children} onDone={() => setSheet(null)} />
+          <BulkIncomeForm
+            campaign={campaign}
+            children={childrenPay ? rows.map((r) => r.child) : children}
+            onDone={() => setSheet(null)}
+          />
         )}
         {sheet?.type === 'transaction' && (
           <TransactionForm

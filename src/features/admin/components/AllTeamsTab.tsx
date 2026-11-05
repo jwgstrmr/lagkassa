@@ -59,12 +59,12 @@ export function AllTeamsTab() {
             >
               <span className="flex-1 min-w-0">
                 <span className="block text-white text-sm font-medium truncate">{team.name}</span>
-                <span className="block text-[#666666] text-xs truncate">
+                <span className="block text-[#8A8A8A] text-xs truncate">
                   {pluralize(players, 'spelare', 'spelare')}
                   {adminNames && ` · ${adminNames}`}
                 </span>
               </span>
-              <ChevronRight size={16} className="text-[#666666] shrink-0" />
+              <ChevronRight size={16} className="text-[#8A8A8A] shrink-0" />
             </button>
           )
         })}

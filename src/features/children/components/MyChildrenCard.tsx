@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { formatSek } from '@/lib/money'
 import { initials } from '@/lib/utils'
-import { earned } from '@/features/campaigns/lib/sales'
+import { paidIn } from '@/features/campaigns/lib/sales'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { useMyChildren } from '../hooks/useChildren'
 
@@ -33,11 +33,11 @@ export function MyChildrenCard() {
             </span>
             <span className="text-right shrink-0">
               <span className="block text-white text-sm font-semibold tabular-nums">
-                {formatSek(earned(transactions, child.id))}
+                {formatSek(paidIn(transactions, child.id))}
               </span>
-              <span className="block text-[#666666] text-xs">intjänat</span>
+              <span className="block text-[#8A8A8A] text-xs">inbetalt</span>
             </span>
-            <ChevronRight size={16} className="text-[#666666]" />
+            <ChevronRight size={16} className="text-[#8A8A8A]" />
           </Link>
         ))}
       </div>

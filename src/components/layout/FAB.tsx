@@ -19,7 +19,7 @@ export function FAB({ onClick, label = 'Lägg till', className }: FABProps) {
       onClick={onClick}
       aria-label={label}
       className={cn(
-        'fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full bg-[#FFD700] text-[#0A0A0A] shadow-lg shadow-[#FFD700]/25 flex items-center justify-center active:scale-95 transition-transform',
+        'fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-50 w-14 h-14 rounded-full bg-[#FFD700] text-[#0A0A0A] shadow-lg shadow-[#FFD700]/25 flex items-center justify-center active:scale-95 transition-transform',
         className,
       )}
     >

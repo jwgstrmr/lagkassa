@@ -29,6 +29,8 @@ function ChartTooltip({ active, payload }: TooltipProps) {
 export function BalanceChart({ points }: { points: Point[] }) {
   const c = useChartTheme()
   const data = points.map((p) => ({ ...p, t: parseISO(p.date).getTime() }))
+  // Över ett årsskifte säger månaden ensam inte vilket år det är
+  const severalYears = points.length > 1 && points[0].date.slice(0, 4) !== points[points.length - 1].date.slice(0, 4)
 
   return (
     <div className="h-48 -ml-2" role="img" aria-label="Saldo över tid">
@@ -40,7 +42,7 @@ export function BalanceChart({ points }: { points: Point[] }) {
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(t: number) => format(t, 'MMM', { locale: sv })}
+            tickFormatter={(t: number) => format(t, severalYears ? 'MMM yyyy' : 'MMM', { locale: sv })}
             stroke={c.axis}
             tick={{ fill: c.muted, fontSize: 11 }}
             tickLine={false}

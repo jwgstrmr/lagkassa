@@ -5,7 +5,7 @@ import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 
 const tabs = [
   { to: '/hem', icon: Home, label: 'Hem', adminOnly: false },
-  { to: '/transaktioner', icon: ArrowLeftRight, label: 'Lagkassan', adminOnly: false },
+  { to: '/transaktioner', icon: ArrowLeftRight, label: 'Kassan', adminOnly: false },
   { to: '/handelser', icon: CalendarDays, label: 'Händelser', adminOnly: false },
   { to: '/admin', icon: Settings, label: 'Admin', adminOnly: true },
 ]
@@ -25,7 +25,7 @@ export function BottomNav() {
             className={({ isActive }) =>
               cn(
                 'flex-1 flex flex-col items-center justify-center gap-1 min-h-[60px] py-2 transition-colors',
-                isActive ? 'text-[#FFD700]' : 'text-[#666666]',
+                isActive ? 'text-[#FFD700]' : 'text-[#8A8A8A]',
               )
             }
           >

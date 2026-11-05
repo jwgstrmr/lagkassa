@@ -10,7 +10,7 @@ import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { CampaignCard } from '@/features/campaigns/components/CampaignCard'
 import { CampaignForm } from '@/features/campaigns/components/CampaignForm'
-import { isEnded } from '@/features/campaigns/lib/format'
+import { campaignStatus } from '@/features/campaigns/lib/format'
 
 export function CampaignsPage() {
   const navigate = useNavigate()
@@ -19,8 +19,9 @@ export function CampaignsPage() {
   const [creating, setCreating] = useState(false)
 
   const groups = [
-    { title: 'Pågående', list: campaigns?.filter((c) => !isEnded(c)) ?? [] },
-    { title: 'Avslutade', list: campaigns?.filter(isEnded) ?? [] },
+    { title: 'Pågående', list: campaigns?.filter((c) => campaignStatus(c) === 'ongoing') ?? [] },
+    { title: 'Kommande', list: campaigns?.filter((c) => campaignStatus(c) === 'upcoming') ?? [] },
+    { title: 'Avslutade', list: campaigns?.filter((c) => campaignStatus(c) === 'ended') ?? [] },
   ].filter((g) => g.list.length > 0)
 
   return (

@@ -1,12 +1,12 @@
-import type { Category, Child, Team, Transaction } from '@/types/database'
+import type { Campaign, Child, Team, Transaction } from '@/types/database'
 
 export function signed(t: Pick<Transaction, 'kind' | 'amount_ore'>): number {
   return t.kind === 'income' ? t.amount_ore : -t.amount_ore
 }
 
-/** Äldre transaktioners beskrivning, annars barnet, kategorin eller typen */
-export function transactionTitle(t: Transaction, category?: Category, child?: Child): string {
-  return t.description || child?.name || category?.name || (t.kind === 'income' ? 'Intäkt' : t.campaign_id ? 'Kostnad' : 'Utgift')
+/** Postens namn, annars barnet eller typen */
+export function transactionTitle(t: Transaction, child?: Child): string {
+  return t.description || child?.name || (t.kind === 'income' ? 'Intäkt' : t.campaign_id ? 'Kostnad' : 'Utgift')
 }
 
 export function balance(team: Team, transactions: Transaction[]): number {
@@ -71,29 +71,35 @@ export function balanceSeries(team: Team, transactions: Transaction[]) {
   return points
 }
 
-export interface CategoryShare {
+export interface Share {
   id: string
   name: string
-  color: string
   amount: number
 }
 
-/** Summa per kategori för en typ, störst först */
-export function byCategory(
+/**
+ * Summa per händelse för en typ, störst först. Fristående poster grupperas efter
+ * sin beskrivning – utan beskrivning hamnar de i Övrigt.
+ */
+export function byGroup(
   transactions: Transaction[],
-  categories: Category[],
+  campaigns: Campaign[],
   kind: Transaction['kind'],
-): CategoryShare[] {
-  const sums = new Map<string, number>()
+): Share[] {
+  const groups = new Map<string, { name: string; amount: number }>()
   for (const t of transactions) {
     if (t.kind !== kind) continue
-    const key = t.category_id ?? ''
-    sums.set(key, (sums.get(key) ?? 0) + t.amount_ore)
+    const description = t.description?.trim()
+    const [key, name] = t.campaign_id
+      ? [t.campaign_id, campaigns.find((c) => c.id === t.campaign_id)?.name ?? 'Händelse']
+      : description
+        ? [`text:${description.toLowerCase()}`, description]
+        : ['', 'Övrigt']
+    const group = groups.get(key) ?? { name, amount: 0 }
+    group.amount += t.amount_ore
+    groups.set(key, group)
   }
-  return [...sums.entries()]
-    .map(([id, amount]) => {
-      const c = categories.find((cat) => cat.id === id)
-      return { id, name: c?.name ?? 'Övrigt', color: c?.color ?? '#666666', amount }
-    })
+  return [...groups.entries()]
+    .map(([id, g]) => ({ id, ...g }))
     .sort((a, b) => b.amount - a.amount)
 }

@@ -6,28 +6,25 @@ import { Tabs } from '@/components/ui/Tabs'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { PlayersTab } from '@/features/admin/components/PlayersTab'
 import { ParentsTab } from '@/features/admin/components/ParentsTab'
-import { CategoriesTab } from '@/features/admin/components/CategoriesTab'
 import { TeamTab } from '@/features/admin/components/TeamTab'
 
-type Tab = 'players' | 'parents' | 'categories' | 'team'
+type Tab = 'players' | 'parents' | 'team'
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'players', label: 'Spelare' },
   { value: 'parents', label: 'Föräldrar' },
-  { value: 'categories', label: 'Kategorier' },
   { value: 'team', label: 'Lag' },
 ]
 
 /** Det aktiva lagets administration */
 export function AdminPage() {
   const navigate = useNavigate()
-  const { team, isSuperAdmin } = useActiveTeam()
+  const { isSuperAdmin } = useActiveTeam()
   const [tab, setTab] = useState<Tab>('players')
   return (
     <div>
       <TopBar
         title="Admin"
-        subtitle={team?.name}
         actions={
           isSuperAdmin && (
             <button
@@ -43,7 +40,6 @@ export function AdminPage() {
       <Tabs value={tab} tabs={TABS} onChange={setTab} />
       {tab === 'players' && <PlayersTab />}
       {tab === 'parents' && <ParentsTab />}
-      {tab === 'categories' && <CategoriesTab />}
       {tab === 'team' && <TeamTab />}
     </div>
   )

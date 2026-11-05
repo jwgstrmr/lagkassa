@@ -28,7 +28,7 @@ export function ConfirmDialog() {
             }}
             className="flex-1"
           >
-            Bekräfta
+            {confirmDialog.confirmLabel}
           </Button>
         </div>
       </div>

@@ -112,7 +112,7 @@ export function RegistryTab() {
               className="block w-full px-4 py-3 text-left active:bg-[#1A1A1A]"
             >
               <span className="block text-white text-sm font-medium">{c.name}</span>
-              <span className="block text-[#666666] text-xs truncate">
+              <span className="block text-[#8A8A8A] text-xs truncate">
                 {teamNames(c.team_ids) || 'Inget lag'}
                 {guardianNames(c.id) && ` · ${guardianNames(c.id)}`}
               </span>

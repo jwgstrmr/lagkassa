@@ -1,12 +1,9 @@
 import { useThemeStore } from '@/store/themeStore'
 
-/** Färger för kategorier i fast ordning – nya kategorier tar nästa lediga */
-export const CATEGORY_COLORS = [
-  '#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767',
-]
-
 const dark = {
   series: '#3987e5',
+  income: '#34D399',
+  expense: '#FB7185',
   seriesFill: 'rgba(57, 135, 229, 0.14)',
   grid: '#2c2c2a',
   axis: '#383835',
@@ -16,6 +13,9 @@ const dark = {
 
 const light = {
   series: '#2a78d6',
+  // Mörkare nyanser – de ljusa når inte 3:1 mot vit bakgrund
+  income: '#059669',
+  expense: '#E11D48',
   seriesFill: 'rgba(42, 120, 214, 0.12)',
   grid: '#e1e0d9',
   axis: '#c3c2b7',

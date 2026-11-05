@@ -10,6 +10,7 @@ export function Chip({ active, color, className, children, ...props }: ChipProps
   return (
     <button
       type="button"
+      aria-pressed={active}
       className={cn(
         'inline-flex items-center px-3 h-8 rounded-full text-sm font-medium whitespace-nowrap transition-all active:scale-95 border',
         active && !color

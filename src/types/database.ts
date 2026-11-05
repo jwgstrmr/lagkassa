@@ -4,8 +4,6 @@ export type TransactionKind = 'income' | 'expense'
 export interface Profile {
   id: string
   full_name: string | null
-  /** Vad varje deltagande barn ska betala, om något */
-  amount_per_child_ore: number | null
   email: string
   /** Ser och administrerar alla lag */
   is_super_admin: boolean
@@ -55,21 +53,15 @@ export interface ChildGuardian {
   profile_id: string
 }
 
-export interface Category {
-  id: string
-  team_id: string
-  name: string
-  color: string
-  sort_order: number
-}
+/** Försäljning – barnen betalar in det de sålt för. Avgift – fast belopp per barn. Övrigt – ingen uppföljning */
+export type CampaignType = 'sale' | 'fee' | 'other'
 
 export interface Campaign {
   id: string
   team_id: string
   name: string
-  /** Händelsens intäkter och utgifter ärver kategorin */
-  category_id: string | null
-  /** Vad varje deltagande barn ska betala, om något */
+  type: CampaignType
+  /** Vad varje barn ska betala – bara för typen Avgift */
   amount_per_child_ore: number | null
   start_date: string | null
   end_date: string | null
@@ -89,11 +81,10 @@ export interface Transaction {
   date: string
   kind: TransactionKind
   amount_ore: number
-  category_id: string | null
   campaign_id: string | null
   /** Barnet en intäkt eller utgift i en händelse gäller */
   child_id: string | null
-  /** Bara äldre transaktioner har beskrivning */
+  /** Postens namn – valfritt i en händelse, där händelsen och barnet säger det mesta */
   description: string | null
   created_by: string | null
   created_at: string

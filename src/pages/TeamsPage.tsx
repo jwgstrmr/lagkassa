@@ -48,11 +48,11 @@ export function TeamsPage() {
               >
                 <span className="flex-1 min-w-0">
                   <span className="block text-white font-medium truncate">{m.team.name}</span>
-                  <span className="block text-[#666666] text-xs">
+                  <span className="block text-[#8A8A8A] text-xs">
                     {m.role === 'admin' ? 'Ekonomiansvarig' : 'Förälder'}
                   </span>
                 </span>
-                <ChevronRight size={16} className="text-[#666666]" />
+                <ChevronRight size={16} className="text-[#8A8A8A]" />
               </button>
             ))}
           </Card>

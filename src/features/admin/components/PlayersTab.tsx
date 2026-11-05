@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Plus, Users } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ChevronRight, Plus, Users } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -7,6 +8,7 @@ import { Chip } from '@/components/ui/Chip'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
 import { ListSkeleton } from '@/components/ui/Skeleton'
+import { formatSek } from '@/lib/money'
 import { useUIStore } from '@/store/uiStore'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import {
@@ -17,16 +19,20 @@ import {
   useRenameChild,
   useSetChildTeams,
 } from '@/features/children/hooks/useChildren'
+import { paidIn } from '@/features/campaigns/lib/sales'
+import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { useProfiles } from '../hooks/useUsers'
 import { displayName } from '../lib/diff'
 import type { Child } from '@/types/database'
 
-function AddPlayerForm({ onDone }: { onDone: () => void }) {
+/** Arket står kvar efter varje barn – ett helt lag läggs in i ett svep */
+function AddPlayerForm() {
   const { teamId } = useActiveTeam()
   const { data: all = [] } = useAllChildren()
   const create = useCreateChild()
   const setTeams = useSetChildTeams()
   const [name, setName] = useState('')
+  const input = useRef<HTMLInputElement>(null)
 
   // Barn från andra lag man ansvarar för kan läggas till direkt
   const others = all.filter((c) => !c.team_ids.includes(teamId))
@@ -34,13 +40,21 @@ function AddPlayerForm({ onDone }: { onDone: () => void }) {
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
-    create.mutate({ name: name.trim(), teamIds: [teamId] }, { onSuccess: onDone })
+    create.mutate(
+      { name: name.trim(), teamIds: [teamId] },
+      {
+        onSuccess: () => {
+          setName('')
+          input.current?.focus()
+        },
+      },
+    )
   }
 
   return (
     <div className="px-4 pb-6 space-y-5">
       <form onSubmit={submit} className="space-y-3">
-        <Input label="Nytt barn" value={name} onChange={(e) => setName(e.target.value)} placeholder="Namn" autoFocus />
+        <Input ref={input} label="Nytt barn" value={name} onChange={(e) => setName(e.target.value)} placeholder="Namn" autoFocus />
         <Button type="submit" className="w-full" loading={create.isPending} disabled={!name.trim()}>
           Lägg till
         </Button>
@@ -53,7 +67,7 @@ function AddPlayerForm({ onDone }: { onDone: () => void }) {
             {others.map((c) => (
               <Chip
                 key={c.id}
-                onClick={() => setTeams.mutate({ childId: c.id, add: [teamId], remove: [] }, { onSuccess: onDone })}
+                onClick={() => setTeams.mutate({ childId: c.id, add: [teamId], remove: [] })}
               >
                 <Plus size={14} className="mr-1" />
                 {c.name}
@@ -70,6 +84,7 @@ function PlayerForm({ child, guardianNames, onDone }: { child: Child; guardianNa
   const { team } = useActiveTeam()
   const rename = useRenameChild()
   const setTeams = useSetChildTeams()
+  const { data: transactions = [] } = useTransactions()
   const openConfirm = useUIStore((s) => s.openConfirm)
   const [name, setName] = useState(child.name)
 
@@ -86,6 +101,14 @@ function PlayerForm({ child, guardianNames, onDone }: { child: Child; guardianNa
         <span className="block text-[#A0A0A0] text-sm font-medium">Föräldrar</span>
         <p className="text-white text-sm mt-1">{guardianNames || '–'}</p>
       </div>
+      <Link
+        to={`/barn/${child.id}`}
+        className="flex items-center gap-3 bg-[#161616] border border-[#222222] rounded-xl px-4 py-3 active:bg-[#1A1A1A]"
+      >
+        <span className="flex-1 text-white text-sm">Inbetalningar</span>
+        <span className="text-white text-sm font-semibold tabular-nums">{formatSek(paidIn(transactions, child.id))}</span>
+        <ChevronRight size={16} className="text-[#8A8A8A]" />
+      </Link>
       <div className="flex gap-2 pt-2">
         <Button
           type="button"
@@ -138,7 +161,7 @@ export function PlayersTab() {
               className="block w-full px-4 py-3 text-left active:bg-[#1A1A1A]"
             >
               <span className="block text-white text-sm font-medium">{c.name}</span>
-              <span className="block text-[#666666] text-xs truncate">
+              <span className="block text-[#8A8A8A] text-xs truncate">
                 {guardianNames(c.id) || 'Ingen förälder kopplad'}
               </span>
             </button>
@@ -151,7 +174,7 @@ export function PlayersTab() {
         onClose={() => setSheet(null)}
         title={sheet === 'add' ? 'Lägg till spelare' : 'Spelare'}
       >
-        {sheet === 'add' && <AddPlayerForm onDone={() => setSheet(null)} />}
+        {sheet === 'add' && <AddPlayerForm />}
         {sheet && sheet !== 'add' && (
           <PlayerForm
             key={sheet.id}

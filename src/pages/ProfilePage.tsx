@@ -56,12 +56,12 @@ export function ProfilePage() {
             <p className="text-white font-bold text-lg truncate">{profile?.full_name ?? 'Okänt namn'}</p>
             <p className="text-[#A0A0A0] text-sm truncate">{profile?.email}</p>
             {team && (
-              <p className="text-[#666666] text-xs mt-0.5">
+              <p className="text-[#8A8A8A] text-xs mt-0.5">
                 {isSuperAdmin ? 'Huvudadmin' : isAdmin ? 'Ekonomiansvarig' : 'Förälder'} · {team.name}
               </p>
             )}
           </div>
-          {!editing && <ChevronRight size={16} className="ml-auto text-[#666666] shrink-0" />}
+          {!editing && <ChevronRight size={16} className="ml-auto text-[#8A8A8A] shrink-0" />}
         </button>
 
         {editing && (
@@ -86,7 +86,7 @@ export function ProfilePage() {
             >
               <Building2 size={16} className="text-[#A0A0A0]" />
               <span className="flex-1 text-left">Huvudadmin</span>
-              <ChevronRight size={16} className="text-[#666666]" />
+              <ChevronRight size={16} className="text-[#8A8A8A]" />
             </button>
           )}
           {memberships.length > 1 && (
@@ -96,7 +96,7 @@ export function ProfilePage() {
             >
               <Users size={16} className="text-[#A0A0A0]" />
               <span className="flex-1 text-left">Byt lag</span>
-              <ChevronRight size={16} className="text-[#666666]" />
+              <ChevronRight size={16} className="text-[#8A8A8A]" />
             </button>
           )}
           <Switch

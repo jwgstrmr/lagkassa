@@ -62,7 +62,7 @@ function UserForm({ profile, onDone }: { profile: Profile; onDone: () => void })
     <div className="px-4 pb-6 space-y-4">
       <div>
         <p className="text-white font-medium">{displayName(profile)}</p>
-        {profile.full_name && <p className="text-[#666666] text-sm">{profile.email}</p>}
+        {profile.full_name && <p className="text-[#8A8A8A] text-sm">{profile.email}</p>}
       </div>
       {!isSelf && (
         <Switch
@@ -208,7 +208,7 @@ export function UsersTab() {
               >
                 <span className="flex-1 min-w-0">
                   <span className="block text-white text-sm font-medium truncate">{displayName(p)}</span>
-                  <span className="block text-[#666666] text-xs truncate">{info || p.email}</span>
+                  <span className="block text-[#8A8A8A] text-xs truncate">{info || p.email}</span>
                 </span>
                 {p.is_super_admin && <Badge variant="accent">Huvudadmin</Badge>}
               </button>
@@ -229,10 +229,10 @@ export function UsersTab() {
                 onClick={() => setSheet({ type: 'invite', invite: inv })}
                 className="flex items-center gap-3 w-full px-4 py-3 text-left active:bg-[#1A1A1A]"
               >
-                <Mail size={16} className="text-[#666666] shrink-0" />
+                <Mail size={16} className="text-[#8A8A8A] shrink-0" />
                 <span className="flex-1 min-w-0">
                   <span className="block text-white text-sm truncate">{inv.email}</span>
-                  <span className="block text-[#666666] text-xs truncate">
+                  <span className="block text-[#8A8A8A] text-xs truncate">
                     {summary(inv.admin_team_ids, inv.child_ids)}
                   </span>
                 </span>

@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import { X } from 'lucide-react'
@@ -24,6 +24,7 @@ export function BottomSheet({
   elevated = false,
 }: BottomSheetProps) {
   const dragControls = useDragControls()
+  const titleId = useId()
 
   useEffect(() => {
     if (isOpen) {
@@ -33,6 +34,18 @@ export function BottomSheet({
     }
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
+
+  // Escape stänger bara det översta arket – bekräftelsen (elevated) fångar tangenten först
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (elevated) e.stopPropagation()
+      onClose()
+    }
+    window.addEventListener('keydown', onKey, elevated)
+    return () => window.removeEventListener('keydown', onKey, elevated)
+  }, [isOpen, elevated, onClose])
 
   // Portal till body – en förälder med backdrop-filter (TopBar) gör annars
   // fixed-positioneringen relativ till sig själv
@@ -49,6 +62,9 @@ export function BottomSheet({
             onClick={onClose}
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? titleId : undefined}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -73,13 +89,13 @@ export function BottomSheet({
             >
               <div className="w-10 h-1 bg-[#333333] rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-3" />
               {title && (
-                <h2 className="font-bold text-white text-lg">{title}</h2>
+                <h2 id={titleId} className="font-bold text-white text-lg">{title}</h2>
               )}
               {showCloseButton && (
                 <button
                   onClick={onClose}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="ml-auto flex items-center justify-center w-8 h-8 text-[#666666] hover:text-white transition-colors"
+                  className="ml-auto flex items-center justify-center w-8 h-8 text-[#8A8A8A] hover:text-white transition-colors"
                   aria-label="Stäng"
                 >
                   <X size={20} />

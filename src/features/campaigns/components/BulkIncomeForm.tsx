@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { formatSek, parseSek } from '@/lib/money'
-import { useAddTransactions } from '@/features/transactions/hooks/useTransactions'
+import { formatSek, oreToInput, parseSek } from '@/lib/money'
+import { useAddTransactions, useTransactions } from '@/features/transactions/hooks/useTransactions'
+import { useCampaignParticipants } from '../hooks/useCampaigns'
+import { due } from '../lib/sales'
 import type { Campaign, Child } from '@/types/database'
 
 interface Props {
@@ -15,6 +17,9 @@ interface Props {
 /** Alla barns inbetalningar på en gång – en intäkt per barn med belopp */
 export function BulkIncomeForm({ campaign, children, onDone }: Props) {
   const add = useAddTransactions()
+  const { data: participants = [] } = useCampaignParticipants()
+  const { data: transactions = [] } = useTransactions()
+  const remaining = (childId: string) => due(campaign, childId, participants, transactions)?.remaining ?? 0
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +41,7 @@ export function BulkIncomeForm({ campaign, children, onDone }: Props) {
         kind: 'income',
         amount_ore: ore!,
         date,
-        category_id: null,
+        description: null,
         campaign_id: campaign.id,
         child_id: child.id,
       })),
@@ -51,18 +56,35 @@ export function BulkIncomeForm({ campaign, children, onDone }: Props) {
       <div className="space-y-1.5">
         <span className="block text-[#A0A0A0] text-sm font-medium">Belopp (kr)</span>
         <div className="bg-[#161616] rounded-xl border border-[#222222] divide-y divide-[#222222]">
-          {children.map((child) => (
-            <label key={child.id} className="flex items-center gap-3 px-4 py-2">
-              <span className="flex-1 min-w-0 text-white text-sm truncate">{child.name}</span>
-              <input
-                inputMode="decimal"
-                value={amounts[child.id] ?? ''}
-                onChange={(e) => setAmounts((a) => ({ ...a, [child.id]: e.target.value }))}
-                placeholder="0"
-                className="w-28 h-10 bg-[#0F0F0F] border border-[#333333] rounded-lg px-3 text-right text-white tabular-nums focus:outline-none focus:border-[#FFD700]"
-              />
-            </label>
-          ))}
+          {children.map((child) => {
+            const rest = remaining(child.id)
+            return (
+              <div key={child.id} className="flex items-center gap-3 px-4 py-2">
+                <div className="flex-1 min-w-0">
+                  <label htmlFor={`amount-${child.id}`} className="block text-white text-sm truncate">
+                    {child.name}
+                  </label>
+                  {rest > 0 && !amounts[child.id]?.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setAmounts((a) => ({ ...a, [child.id]: oreToInput(rest) }))}
+                      className="py-1 -my-1 text-[#FFD700] text-xs font-medium"
+                    >
+                      Fyll i {formatSek(rest)}
+                    </button>
+                  )}
+                </div>
+                <input
+                  id={`amount-${child.id}`}
+                  inputMode="decimal"
+                  value={amounts[child.id] ?? ''}
+                  onChange={(e) => setAmounts((a) => ({ ...a, [child.id]: e.target.value }))}
+                  placeholder="0"
+                  className="w-28 h-10 bg-[#0F0F0F] border border-[#333333] rounded-lg px-3 text-right text-white tabular-nums focus:outline-none focus:border-[#FFD700]"
+                />
+              </div>
+            )
+          })}
         </div>
       </div>
 
