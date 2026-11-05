@@ -14,7 +14,7 @@ import { useChildren } from '@/features/children/hooks/useChildren'
 import { useCampaignParticipants, useCampaigns, useSwitchToCampaignTeam } from '@/features/campaigns/hooks/useCampaigns'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { totals } from '@/features/transactions/lib/finance'
-import { due, earned, paidIn } from '@/features/campaigns/lib/sales'
+import { due, dueStatus, earned, paidIn } from '@/features/campaigns/lib/sales'
 import { campaignTypeLabel, dateRange } from '@/features/campaigns/lib/format'
 import { CampaignForm } from '@/features/campaigns/components/CampaignForm'
 import { BulkIncomeForm } from '@/features/campaigns/components/BulkIncomeForm'
@@ -62,9 +62,10 @@ export function CampaignDetailPage() {
   const sum = totals(linked)
   const subtitle = [campaignTypeLabel(campaign.type), dateRange(campaign)].filter(Boolean).join(' · ')
 
-  // De som ska betala, plus barn som ändå har något bokfört. Övrigt följs inte upp per barn,
-  // så där visas bara barn med inbetalningar – annars ser 0 kr ut som en obetald skuld
-  const childrenPay = campaign.type !== 'other'
+  // De som ska betala eller jobbar, plus barn som ändå har något bokfört. Övrigt följs inte upp
+  // per barn, så där visas bara barn med inbetalningar – annars ser 0 kr ut som en obetald skuld
+  const perChild = campaign.type !== 'other'
+  const job = campaign.type === 'job'
   const rows = children
     .map((child) => ({ child, due: due(campaign, child.id, participants, transactions) }))
     .filter(({ child, due: d }) => d || linked.some((t) => t.child_id === child.id))
@@ -73,10 +74,10 @@ export function CampaignDetailPage() {
     sheet?.type === 'campaign'
       ? 'Ändra händelse'
       : sheet?.type === 'bulk'
-        ? 'Inbetalningar per barn'
+        ? job ? 'Ersättning per barn' : 'Inbetalningar per barn'
         : sheet?.transaction
           ? 'Ändra'
-          : sheet?.childId ? 'Ny inbetalning' : 'Lägg till'
+          : sheet?.childId ? (job ? 'Ny ersättning' : 'Ny inbetalning') : 'Lägg till'
 
   return (
     <div>
@@ -144,7 +145,7 @@ export function CampaignDetailPage() {
                       <span className="block text-white text-sm truncate">{child.name}</span>
                       {d && !d.done && (
                         <span className="block text-[#8A8A8A] text-xs">
-                          {d.expected ? `${formatSek(d.remaining)} kvar` : 'Inget registrerat'}
+                          {job ? dueStatus(d) : d.expected ? `${formatSek(d.remaining)} kvar` : 'Inget registrerat'}
                         </span>
                       )}
                       {!isAdmin && paid > 0 && (
@@ -211,7 +212,7 @@ export function CampaignDetailPage() {
         {sheet?.type === 'bulk' && (
           <BulkIncomeForm
             campaign={campaign}
-            children={childrenPay ? rows.map((r) => r.child) : children}
+            children={perChild ? rows.map((r) => r.child) : children}
             onDone={() => setSheet(null)}
           />
         )}

@@ -11,7 +11,7 @@ import { useChildren } from '@/features/children/hooks/useChildren'
 import { useCampaignParticipants, useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { signed, transactionTitle } from '@/features/transactions/lib/finance'
-import { due, dueStatus, earned, paidIn } from '@/features/campaigns/lib/sales'
+import { due, dueStatus, earned, owes, paidByFamily, paidIn } from '@/features/campaigns/lib/sales'
 import { dateRange } from '@/features/campaigns/lib/format'
 
 /** Vad ett barn betalat in och tjänat till kassan i lagets händelser */
@@ -43,8 +43,8 @@ export function ChildPage() {
       due: due(c, id, participants, transactions),
     }))
     .filter((x) => x.payments.length > 0 || x.due)
-    // Det som saknas först
-    .sort((a, b) => Number(!!b.due && !b.due.done) - Number(!!a.due && !a.due.done))
+    // Det föräldrarna har kvar att betala först
+    .sort((a, b) => Number(!!b.due && owes(b.due)) - Number(!!a.due && owes(a.due)))
 
   return (
     <div>
@@ -55,7 +55,7 @@ export function ChildPage() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-[#A0A0A0] text-sm font-medium">Inbetalt</p>
-              <p className="text-white text-2xl font-bold mt-1 tabular-nums">{formatSek(paidIn(transactions, id))}</p>
+              <p className="text-white text-2xl font-bold mt-1 tabular-nums">{formatSek(paidByFamily(transactions, campaigns, id))}</p>
             </div>
             <div>
               <p className="text-[#A0A0A0] text-sm font-medium">Intjänat till kassan</p>
@@ -79,7 +79,12 @@ export function ChildPage() {
                     <span className="block text-[#8A8A8A] text-xs">{dateRange(x.campaign)}</span>
                   )}
                   {x.due && (
-                    <span className={cn('block text-xs', x.due.done ? 'text-[#22C55E]' : 'text-[#FFD700]')}>
+                    <span
+                      className={cn(
+                        'block text-xs',
+                        x.due.done ? 'text-[#22C55E]' : owes(x.due) ? 'text-[#FFD700]' : 'text-[#8A8A8A]',
+                      )}
+                    >
                       {dueStatus(x.due)}
                     </span>
                   )}

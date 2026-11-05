@@ -4,6 +4,7 @@ import type { Campaign, CampaignType } from '@/types/database'
 
 export const CAMPAIGN_TYPES: { value: CampaignType; label: string }[] = [
   { value: 'sale', label: 'Försäljning' },
+  { value: 'job', label: 'Jobb' },
   { value: 'fee', label: 'Avgift' },
   { value: 'other', label: 'Övrigt' },
 ]

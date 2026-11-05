@@ -53,15 +53,18 @@ export interface ChildGuardian {
   profile_id: string
 }
 
-/** Försäljning – barnen betalar in det de sålt för. Avgift – fast belopp per barn. Övrigt – ingen uppföljning */
-export type CampaignType = 'sale' | 'fee' | 'other'
+/**
+ * Försäljning – barnen betalar in det de sålt för. Avgift – fast belopp per barn.
+ * Jobb – barnen jobbar och laget får en ersättning per barn. Övrigt – ingen uppföljning
+ */
+export type CampaignType = 'sale' | 'fee' | 'job' | 'other'
 
 export interface Campaign {
   id: string
   team_id: string
   name: string
   type: CampaignType
-  /** Vad varje barn ska betala – bara för typen Avgift */
+  /** Avgift: vad varje barn ska betala. Försäljning: valfritt minimum. Jobb: valfri ersättning per barn */
   amount_per_child_ore: number | null
   start_date: string | null
   end_date: string | null

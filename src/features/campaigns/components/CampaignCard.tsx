@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CalendarDays, Check, ChevronRight, ShoppingBag, Ticket, type LucideIcon } from 'lucide-react'
+import { Briefcase, CalendarDays, Check, ChevronRight, ShoppingBag, Ticket, type LucideIcon } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 import { formatSek } from '@/lib/money'
@@ -7,14 +7,15 @@ import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { useChildren, useMyChildren } from '@/features/children/hooks/useChildren'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { useCampaignParticipants } from '../hooks/useCampaigns'
-import { due, paidIn, type Due } from '../lib/sales'
+import { due, dueStatus, owes, paidIn, type Due } from '../lib/sales'
 import { campaignTypeLabel, shortRange } from '../lib/format'
 import type { Campaign, CampaignType } from '@/types/database'
 
-const TYPE_ICONS: Record<CampaignType, LucideIcon> = { sale: ShoppingBag, fee: Ticket, other: CalendarDays }
+const TYPE_ICONS: Record<CampaignType, LucideIcon> = { sale: ShoppingBag, fee: Ticket, job: Briefcase, other: CalendarDays }
 
-/** Kort status till etiketten – "300 kr kvar", "Betalt 400 kr", "Ej registrerat" */
+/** Kort status till etiketten – "300 kr kvar", "Betalt 400 kr", "Ej registrerat", "Jobbar" */
 function statusLabel(d: Due): string {
+  if (d.campaign.type === 'job') return dueStatus(d)
   if (!d.done) return d.expected ? `${formatSek(d.remaining)} kvar` : 'Ej registrerat'
   return `${d.campaign.type === 'fee' ? 'Betalt' : 'Inbetalt'} ${formatSek(d.paid)}`
 }
@@ -35,12 +36,13 @@ export function CampaignCard({ campaign: c }: { campaign: Campaign }) {
     .flatMap((p) => due(c, p.child_id, participants, transactions) ?? [])
   const paidCount = dues.filter((d) => d.done).length
 
-  // De egna barnens status – det föräldern vill kontrollera
+  // De egna barnens status – det föräldern vill kontrollera. Grått när föräldern inte har något att göra
   const mine = myChildren.flatMap((child) => {
     const d = due(c, child.id, participants, transactions)
-    if (d) return [{ child, text: statusLabel(d), done: d.done }]
+    if (d) return [{ child, text: statusLabel(d), done: d.done, owes: owes(d) }]
     const paid = paidIn(transactions, child.id, c.id)
-    return paid ? [{ child, text: `Inbetalt ${formatSek(paid)}`, done: true }] : []
+    const text = `${c.type === 'job' ? 'Ersättning' : 'Inbetalt'} ${formatSek(paid)}`
+    return paid ? [{ child, text, done: true, owes: false }] : []
   })
 
   return (
@@ -69,7 +71,7 @@ export function CampaignCard({ campaign: c }: { campaign: Campaign }) {
               />
             </div>
             <span className="text-[#A0A0A0] text-xs tabular-nums shrink-0">
-              {paidCount}/{dues.length} betalt
+              {paidCount}/{dues.length} {c.type === 'job' ? 'utbetalt' : 'betalt'}
             </span>
           </div>
         )}
@@ -82,7 +84,11 @@ export function CampaignCard({ campaign: c }: { campaign: Campaign }) {
                 <span
                   className={cn(
                     'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums whitespace-nowrap',
-                    m.done ? 'bg-[#22C55E]/15 text-[#22C55E]' : 'bg-[#FFD700]/15 text-[#FFD700]',
+                    m.done
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : m.owes
+                        ? 'bg-[#FFD700]/15 text-[#FFD700]'
+                        : 'bg-[#222222] text-[#A0A0A0]',
                   )}
                 >
                   {m.done && <Check size={12} strokeWidth={3} />}

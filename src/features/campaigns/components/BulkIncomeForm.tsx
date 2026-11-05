@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { formatSek, oreToInput, parseSek } from '@/lib/money'
+import { pluralize } from '@/lib/utils'
 import { useAddTransactions, useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { useCampaignParticipants } from '../hooks/useCampaigns'
 import { due } from '../lib/sales'
@@ -92,7 +93,11 @@ export function BulkIncomeForm({ campaign, children, onDone }: Props) {
 
       <Button type="submit" className="w-full" loading={add.isPending} disabled={!parsed.length}>
         {parsed.length
-          ? `Spara ${parsed.length === 1 ? '1 inbetalning' : `${parsed.length} inbetalningar`} · ${formatSek(total)}`
+          ? `Spara ${
+              campaign.type === 'job'
+                ? pluralize(parsed.length, 'ersättning', 'ersättningar')
+                : pluralize(parsed.length, 'inbetalning', 'inbetalningar')
+            } · ${formatSek(total)}`
           : 'Spara'}
       </Button>
     </form>

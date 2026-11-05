@@ -1,11 +1,20 @@
 import type { Campaign, CampaignParticipant, Transaction } from '@/types/database'
 import { formatSek } from '@/lib/money'
 import { totals } from '@/features/transactions/lib/finance'
+import { campaignStatus } from './format'
 
 /** Vad som betalats in för barnet – händelsernas intäkter kopplade till barnet, ev. för en viss händelse */
 export function paidIn(transactions: Transaction[], childId: string, campaignId?: string): number {
   return transactions
     .filter((t) => t.kind === 'income' && t.child_id === childId && (!campaignId || t.campaign_id === campaignId))
+    .reduce((sum, t) => sum + t.amount_ore, 0)
+}
+
+/** Vad familjen betalat in – utan ersättningar för jobb, som betalas av den som anlitat laget */
+export function paidByFamily(transactions: Transaction[], campaigns: Campaign[], childId: string): number {
+  const jobs = new Set(campaigns.filter((c) => c.type === 'job').map((c) => c.id))
+  return transactions
+    .filter((t) => t.kind === 'income' && t.child_id === childId && !(t.campaign_id && jobs.has(t.campaign_id)))
     .reduce((sum, t) => sum + t.amount_ore, 0)
 }
 
@@ -30,7 +39,7 @@ export function earned(transactions: Transaction[], childId: string, campaignId?
 export interface Due {
   campaign: Campaign
   childId: string
-  /** Fast belopp per barn – null när barnet betalar in t.ex. det det sålt för */
+  /** Belopp per barn – avgiften, försäljningens minimum eller jobbets ersättning. Null om inget är angivet */
   expected: number | null
   /** Händelsens intäkter kopplade till barnet */
   paid: number
@@ -53,8 +62,18 @@ export function due(
   return { campaign, childId, expected, paid, remaining, done: expected ? !remaining : paid > 0 }
 }
 
+/** Föräldrarna har något kvar att betala – ett jobb betalas av någon annan */
+export function owes(d: Due): boolean {
+  return !d.done && d.campaign.type !== 'job'
+}
+
 /** "200 kr kvar av 400 kr", "Betalt 400 kr", "300 kr kvar till minst 500 kr", "Inget registrerat än" … */
 export function dueStatus(d: Due): string {
+  if (d.campaign.type === 'job') {
+    if (d.done) return `Ersättning ${formatSek(d.paid)}`
+    const status = campaignStatus(d.campaign)
+    return status === 'upcoming' ? 'Ska jobba' : status === 'ongoing' ? 'Jobbar' : 'Väntar på ersättning'
+  }
   // Försäljningens minimum får överskridas – visa vad som faktiskt är inbetalt
   if (d.expected && d.campaign.type === 'sale') {
     return d.done ? `Inbetalt ${formatSek(d.paid)}` : `${formatSek(d.remaining)} kvar till minst ${formatSek(d.expected)}`

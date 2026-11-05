@@ -15,7 +15,14 @@ import { useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { CampaignCard } from '@/features/campaigns/components/CampaignCard'
 import { OpenDuesCard } from '@/features/campaigns/components/OpenDuesCard'
 import { campaignStatus } from '@/features/campaigns/lib/format'
-import type { TransactionKind } from '@/types/database'
+import type { CampaignType, TransactionKind } from '@/types/database'
+
+// Där föräldrarna har något att göra – inte Övrigt
+const ONGOING: { type: CampaignType; one: string; many: string }[] = [
+  { type: 'sale', one: 'Pågående försäljning', many: 'Pågående försäljningar' },
+  { type: 'job', one: 'Pågående jobb', many: 'Pågående jobb' },
+  { type: 'fee', one: 'Pågående avgift', many: 'Pågående avgifter' },
+]
 
 function Total({ label, ore, small, kind }: { label: string; ore?: number; small?: boolean; kind?: TransactionKind }) {
   return (
@@ -36,8 +43,10 @@ export function HomePage() {
   const { team } = useActiveTeam()
   const { data: transactions } = useTransactions()
   const { data: campaigns = [] } = useCampaigns()
-  // Där föräldrarna har något att göra – inte Övrigt
-  const ongoing = campaigns.filter((c) => c.type !== 'other' && campaignStatus(c) === 'ongoing')
+  const ongoing = ONGOING.map((g) => ({
+    ...g,
+    list: campaigns.filter((c) => c.type === g.type && campaignStatus(c) === 'ongoing'),
+  })).filter((g) => g.list.length > 0)
 
   // Från start – ingående saldo plus intäkter minus utgifter blir det som är i kassan
   const stats = useMemo(() => {
@@ -69,20 +78,20 @@ export function HomePage() {
 
         <OpenDuesCard />
 
-        {ongoing.length > 0 && (
-          <section>
+        {ongoing.map((g) => (
+          <section key={g.type}>
             <Link
               to="/handelser"
               className="flex items-center justify-between px-1 mb-2 text-[#A0A0A0] text-xs font-semibold uppercase tracking-wider"
             >
-              Pågående
+              {g.list.length === 1 ? g.one : g.many}
               <ChevronRight size={14} className="text-[#8A8A8A]" />
             </Link>
             <div className="space-y-2">
-              {ongoing.map((c) => <CampaignCard key={c.id} campaign={c} />)}
+              {g.list.map((c) => <CampaignCard key={c.id} campaign={c} />)}
             </div>
           </section>
-        )}
+        ))}
 
         <MyChildrenCard />
       </div>

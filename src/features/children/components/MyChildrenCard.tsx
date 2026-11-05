@@ -3,13 +3,15 @@ import { ChevronRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { formatSek } from '@/lib/money'
 import { initials } from '@/lib/utils'
-import { paidIn } from '@/features/campaigns/lib/sales'
+import { earned, paidByFamily } from '@/features/campaigns/lib/sales'
+import { useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { useMyChildren } from '../hooks/useChildren'
 
 export function MyChildrenCard() {
   const { data: children } = useMyChildren()
   const { data: transactions = [] } = useTransactions()
+  const { data: campaigns = [] } = useCampaigns()
 
   if (!children.length) return null
 
@@ -19,27 +21,32 @@ export function MyChildrenCard() {
         {children.length === 1 ? 'Mitt barn' : 'Mina barn'}
       </h2>
       <div className="divide-y divide-[#222222]">
-        {children.map((child) => (
-          <Link
-            key={child.id}
-            to={`/barn/${child.id}`}
-            className="flex items-center gap-3 px-4 py-3 active:bg-[#1A1A1A]"
-          >
-            <span className="w-9 h-9 rounded-full bg-[#FFD700]/15 flex items-center justify-center text-[#FFD700] text-xs font-bold shrink-0">
-              {initials(child.name)}
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-white text-sm font-medium truncate">{child.name}</span>
-            </span>
-            <span className="text-right shrink-0">
-              <span className="block text-white text-sm font-semibold tabular-nums">
-                {formatSek(paidIn(transactions, child.id))}
+        {children.map((child) => {
+          const paid = paidByFamily(transactions, campaigns, child.id)
+          return (
+            <Link
+              key={child.id}
+              to={`/barn/${child.id}`}
+              className="flex items-center gap-3 px-4 py-3 active:bg-[#1A1A1A]"
+            >
+              <span className="w-9 h-9 rounded-full bg-[#FFD700]/15 flex items-center justify-center text-[#FFD700] text-xs font-bold shrink-0">
+                {initials(child.name)}
               </span>
-              <span className="block text-[#8A8A8A] text-xs">inbetalt</span>
-            </span>
-            <ChevronRight size={16} className="text-[#8A8A8A]" />
-          </Link>
-        ))}
+              <span className="flex-1 min-w-0">
+                <span className="block text-white text-sm font-medium truncate">{child.name}</span>
+                {paid > 0 && <span className="block text-[#8A8A8A] text-xs">{formatSek(paid)} inbetalt</span>}
+              </span>
+              {/* Det laget faktiskt fått – barnets del av händelsernas netto, efter kostnaderna */}
+              <span className="text-right shrink-0">
+                <span className="block text-white text-sm font-semibold tabular-nums">
+                  {formatSek(earned(transactions, child.id))}
+                </span>
+                <span className="block text-[#8A8A8A] text-xs">till kassan</span>
+              </span>
+              <ChevronRight size={16} className="text-[#8A8A8A]" />
+            </Link>
+          )
+        })}
       </div>
     </Card>
   )

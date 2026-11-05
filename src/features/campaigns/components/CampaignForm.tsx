@@ -16,6 +16,20 @@ import { useCampaignParticipants, useDeleteCampaign, useSaveCampaign } from '../
 import { CAMPAIGN_TYPES } from '../lib/format'
 import type { Campaign, CampaignType } from '@/types/database'
 
+const NAME_EXAMPLE: Record<CampaignType, string> = {
+  sale: 'Bingolotter våren',
+  fee: 'Cupavgift',
+  job: 'Städning efter match',
+  other: 'Avslutning',
+}
+
+// Typerna som följs upp per barn – vad beloppet är och vad barnen gör
+const PER_CHILD: Record<Exclude<CampaignType, 'other'>, { amount: string; who: string }> = {
+  sale: { amount: 'Minst per barn (kr)', who: 'Säljer' },
+  fee: { amount: 'Belopp per barn (kr)', who: 'Ska betala' },
+  job: { amount: 'Ersättning per barn (kr)', who: 'Jobbar' },
+}
+
 interface Props {
   campaign?: Campaign
   onDone: (id?: string) => void
@@ -45,7 +59,7 @@ export function CampaignForm({ campaign, onDone }: Props) {
   const [type, setType] = useState<CampaignType>(campaign?.type ?? 'sale')
   const saved = participants.filter((p) => p.campaign_id === campaign?.id).map((p) => p.child_id)
   const participantIds = picked ?? (saved.length ? saved : children.map((c) => c.id))
-  const childrenPay = type !== 'other'
+  const perChild = type === 'other' ? null : PER_CHILD[type]
   const ore = parseSek(amount)
 
   function toggleChild(id: string) {
@@ -57,9 +71,14 @@ export function CampaignForm({ campaign, onDone }: Props) {
     if (!name.trim()) return
     if (type === 'fee' && !ore) return setError('Ange vad varje barn ska betala')
     if (type === 'sale' && amount.trim() && !ore) return setError('Minimum per barn är inte ett belopp')
-    if (childrenPay && !participantIds.length) return setError('Välj vilka barn som ska betala in')
+    if (type === 'job' && amount.trim() && !ore) return setError('Ersättningen per barn är inte ett belopp')
+    if (perChild && !participantIds.length) {
+      return setError(type === 'job' ? 'Välj vilka barn som jobbar' : 'Välj vilka barn som ska betala in')
+    }
     // Utan slutdatum blir händelsen aldrig avslutad och ligger kvar som pågående
-    if (childrenPay && !endDate) return setError('Ange ett till-datum när inbetalningarna ska vara klara')
+    if (perChild && !endDate) {
+      return setError(type === 'job' ? 'Ange ett till-datum när jobbet är klart' : 'Ange ett till-datum när inbetalningarna ska vara klara')
+    }
     if (startDate && endDate && endDate < startDate) return setError('Till-datumet är före från-datumet')
     setError(null)
     save.mutate(
@@ -67,12 +86,12 @@ export function CampaignForm({ campaign, onDone }: Props) {
         id: campaign?.id,
         name: name.trim(),
         type,
-        // Avgift: exakt belopp. Försäljning: valfritt minimum. Övrigt: inget
+        // Avgift: exakt belopp. Försäljning: valfritt minimum. Jobb: valfri ersättning. Övrigt: inget
         amount_per_child_ore: type === 'other' ? null : ore,
         start_date: startDate || null,
         end_date: endDate || null,
         notes: notes.trim() || null,
-        participant_ids: childrenPay ? participantIds : [],
+        participant_ids: perChild ? participantIds : [],
       },
       { onSuccess: (id) => onDone(id as string) },
     )
@@ -105,22 +124,22 @@ export function CampaignForm({ campaign, onDone }: Props) {
         label="Namn"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder={type === 'fee' ? 'Cupavgift' : type === 'sale' ? 'Bingolotter våren' : 'Avslutning'}
+        placeholder={NAME_EXAMPLE[type]}
         autoFocus={!campaign}
       />
-      {childrenPay && (
+      {perChild && (
         <Input
-          label={type === 'fee' ? 'Belopp per barn (kr)' : 'Minst per barn (kr)'}
+          label={perChild.amount}
           inputMode="decimal"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder={type === 'fee' ? '0' : 'Valfritt – t.ex. 10 lotter à 50 kr = 500'}
+          placeholder={type === 'fee' ? '0' : type === 'sale' ? 'Valfritt – t.ex. 10 lotter à 50 kr = 500' : 'Valfritt'}
         />
       )}
-      {childrenPay && children.length > 0 && (
+      {perChild && children.length > 0 && (
         <div className="space-y-1.5">
           <span className="block text-[#A0A0A0] text-sm font-medium">
-            {type === 'fee' ? 'Ska betala' : 'Säljer'} · {participantIds.length} barn
+            {perChild.who} · {participantIds.length} barn
             {ore ? ` · ${type === 'sale' ? 'minst ' : ''}${formatSek(participantIds.length * ore)}` : ''}
           </span>
           <div className="flex flex-wrap gap-2">
@@ -148,7 +167,9 @@ export function CampaignForm({ campaign, onDone }: Props) {
         label="Information"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="Vad gäller, sista dag att betala, Swish-nummer …"
+        placeholder={
+          type === 'job' ? 'Var och när, samlingstid, vad barnen ska ha med sig …' : 'Vad gäller, sista dag att betala, Swish-nummer …'
+        }
         rows={6}
       />
       {error && <p className="text-[#EF4444] text-sm">{error}</p>}

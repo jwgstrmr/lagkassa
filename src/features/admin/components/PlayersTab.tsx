@@ -19,7 +19,8 @@ import {
   useRenameChild,
   useSetChildTeams,
 } from '@/features/children/hooks/useChildren'
-import { paidIn } from '@/features/campaigns/lib/sales'
+import { paidByFamily } from '@/features/campaigns/lib/sales'
+import { useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { useProfiles } from '../hooks/useUsers'
 import { displayName } from '../lib/diff'
@@ -85,6 +86,7 @@ function PlayerForm({ child, guardianNames, onDone }: { child: Child; guardianNa
   const rename = useRenameChild()
   const setTeams = useSetChildTeams()
   const { data: transactions = [] } = useTransactions()
+  const { data: campaigns = [] } = useCampaigns()
   const openConfirm = useUIStore((s) => s.openConfirm)
   const [name, setName] = useState(child.name)
 
@@ -106,7 +108,7 @@ function PlayerForm({ child, guardianNames, onDone }: { child: Child; guardianNa
         className="flex items-center gap-3 bg-[#161616] border border-[#222222] rounded-xl px-4 py-3 active:bg-[#1A1A1A]"
       >
         <span className="flex-1 text-white text-sm">Inbetalningar</span>
-        <span className="text-white text-sm font-semibold tabular-nums">{formatSek(paidIn(transactions, child.id))}</span>
+        <span className="text-white text-sm font-semibold tabular-nums">{formatSek(paidByFamily(transactions, campaigns, child.id))}</span>
         <ChevronRight size={16} className="text-[#8A8A8A]" />
       </Link>
       <div className="flex gap-2 pt-2">
