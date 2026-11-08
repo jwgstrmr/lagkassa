@@ -40,7 +40,6 @@ export function ForgotPasswordPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            placeholder="din@email.se"
             autoFocus
           />
           <Button type="submit" size="lg" className="w-full" loading={loading}>

@@ -14,6 +14,7 @@ export function SignupPage() {
   const { user } = useAuthContext()
   const next = returnTo(location.state)
   const [fullName, setFullName] = useState('')
+  const [childrenNote, setChildrenNote] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -31,7 +32,7 @@ export function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { data: { full_name: fullName, children_note: childrenNote.trim() } },
     })
     setLoading(false)
 
@@ -59,7 +60,13 @@ export function SignupPage() {
             onChange={(e) => setFullName(e.target.value)}
             required
             autoComplete="name"
-            placeholder="Anna Svensson"
+          />
+          <Input
+            label="Ditt barns namn"
+            value={childrenNote}
+            onChange={(e) => setChildrenNote(e.target.value)}
+            maxLength={200}
+            autoComplete="off"
           />
           <Input
             label="E-postadress"
@@ -68,7 +75,6 @@ export function SignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            placeholder="din@email.se"
           />
           <Input
             label="Lösenord"

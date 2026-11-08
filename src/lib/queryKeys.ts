@@ -5,7 +5,6 @@ export const queryKeys = {
   guardians: ['guardians'] as const,
   profiles: ['profiles'] as const,
   teamAdmins: ['team-admins'] as const,
-  invites: ['invites'] as const,
   // Saknade inbetalningar i alla lag man är ekonomiansvarig för
   openDues: ['open-dues'] as const,
   // Vilket lag en händelse hör till – för länkar till ett annat av ens lag

@@ -7,18 +7,19 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ListSkeleton } from '@/components/ui/Skeleton'
-import { cn } from '@/lib/utils'
+import { cn, pluralize } from '@/lib/utils'
 import { formatSek } from '@/lib/money'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { useChildren } from '@/features/children/hooks/useChildren'
 import { useCampaignParticipants, useCampaigns, useSwitchToCampaignTeam } from '@/features/campaigns/hooks/useCampaigns'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { totals } from '@/features/transactions/lib/finance'
-import { due, dueStatus, earned, paidIn } from '@/features/campaigns/lib/sales'
+import { due, dueStatus, earned, owes, paidIn } from '@/features/campaigns/lib/sales'
 import { campaignTypeLabel, dateRange } from '@/features/campaigns/lib/format'
 import { CampaignForm } from '@/features/campaigns/components/CampaignForm'
 import { BulkIncomeForm } from '@/features/campaigns/components/BulkIncomeForm'
-import { TransactionRow } from '@/features/transactions/components/TransactionRow'
+import { SignedAmount, TransactionRow } from '@/features/transactions/components/TransactionRow'
+import { SwishButton } from '@/features/campaigns/components/SwishButton'
 import { TransactionForm } from '@/features/transactions/components/TransactionForm'
 import { KIND_TEXT } from '@/features/transactions/lib/colors'
 import type { Transaction, TransactionKind } from '@/types/database'
@@ -34,6 +35,47 @@ function Stat({ label, value, kind }: { label: string; value: string; kind?: Tra
       <p className="text-[#8A8A8A] text-xs">{label}</p>
       <p className={cn('font-semibold tabular-nums', kind ? KIND_TEXT[kind] : 'text-white')}>{value}</p>
     </div>
+  )
+}
+
+function SumRow({ title, detail, kind, ore }: { title: string; detail: string; kind: TransactionKind; ore: number }) {
+  return (
+    <div className="flex items-center gap-3 w-full px-4 py-3">
+      <span className="flex-1 min-w-0">
+        <span className="block text-white text-sm font-medium truncate">{title}</span>
+        <span className="block text-[#8A8A8A] text-xs">{detail}</span>
+      </span>
+      <SignedAmount kind={kind} ore={ore} className="text-sm" />
+    </div>
+  )
+}
+
+/**
+ * Vad pengarna i händelsen kom från och gick till, för föräldrarna. Kostnader och intäkter som inte
+ * gäller något barn visas var för sig – barnens inbetalningar och återbetalningar bara som summor
+ */
+function ParentLedger({ linked }: { linked: Transaction[] }) {
+  const fromChildren = linked.filter((t) => t.child_id && t.kind === 'income')
+  const toChildren = linked.filter((t) => t.child_id && t.kind === 'expense')
+  const other = linked.filter((t) => !t.child_id)
+  const sum = (list: Transaction[]) => list.reduce((s, t) => s + t.amount_ore, 0)
+  const kids = (list: Transaction[]) => pluralize(new Set(list.map((t) => t.child_id)).size, 'barn', 'barn')
+
+  return (
+    <Card padding={false} className="overflow-hidden">
+      <h2 className="text-white font-semibold px-4 pt-4 pb-2">Intäkter och kostnader</h2>
+      <div className="divide-y divide-[#222222]">
+        {fromChildren.length > 0 && (
+          <SumRow title="Inbetalningar från barnen" detail={kids(fromChildren)} kind="income" ore={sum(fromChildren)} />
+        )}
+        {other.map((t) => (
+          <TransactionRow key={t.id} transaction={t} />
+        ))}
+        {toChildren.length > 0 && (
+          <SumRow title="Återbetalningar" detail={kids(toChildren)} kind="expense" ore={sum(toChildren)} />
+        )}
+      </div>
+    </Card>
   )
 }
 
@@ -154,25 +196,30 @@ export function CampaignDetailPage() {
                         </span>
                       )}
                     </span>
-                    {d ? (
-                      <span
-                        className={cn(
-                          'text-sm tabular-nums whitespace-nowrap',
-                          d.done ? 'text-[#22C55E] font-semibold' : d.paid ? 'text-white font-semibold' : 'text-[#8A8A8A]',
-                        )}
-                      >
-                        {formatSek(d.paid)}
-                        {d.expected ? (
-                          <span className="text-[#8A8A8A] font-normal">
-                            {' / '}{campaign.type === 'sale' ? 'minst ' : ''}{formatSek(d.expected)}
-                          </span>
-                        ) : null}
-                      </span>
-                    ) : (
-                      <span className={cn('text-sm tabular-nums', paid ? 'text-white font-semibold' : 'text-[#8A8A8A]')}>
-                        {formatSek(paid)}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-2 shrink-0">
+                      {d ? (
+                        <span
+                          className={cn(
+                            'text-sm tabular-nums whitespace-nowrap',
+                            d.done ? 'text-[#22C55E] font-semibold' : d.paid ? 'text-white font-semibold' : 'text-[#8A8A8A]',
+                          )}
+                        >
+                          {formatSek(d.paid)}
+                          {d.expected ? (
+                            <span className="text-[#8A8A8A] font-normal">
+                              {' / '}{campaign.type === 'sale' ? 'minst ' : ''}{formatSek(d.expected)}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : (
+                        <span className={cn('text-sm tabular-nums', paid ? 'text-white font-semibold' : 'text-[#8A8A8A]')}>
+                          {formatSek(paid)}
+                        </span>
+                      )}
+                      {!isAdmin && d && owes(d) && (
+                        <SwishButton amountOre={d.remaining || null} message={`${child.name} ${campaign.name}`} />
+                      )}
+                    </span>
                   </Row>
                 )
               })}
@@ -180,7 +227,8 @@ export function CampaignDetailPage() {
           </Card>
         )}
 
-        {/* Föräldrar ser bara summorna – raderna är andras barns inbetalningar utan namn */}
+        {!isAdmin && linked.length > 0 && <ParentLedger linked={linked} />}
+
         {isAdmin && (
           <Card padding={false} className="overflow-hidden">
             <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">

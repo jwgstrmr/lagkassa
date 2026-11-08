@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Building2, ChevronRight, LogOut, Moon, Sun, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { TopBar } from '@/components/layout/TopBar'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
@@ -11,12 +12,14 @@ import { supabase } from '@/lib/supabase'
 import { useThemeStore } from '@/store/themeStore'
 import { useAuthContext } from '@/features/auth/components/AuthProvider'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
+import { usePendingProfiles } from '@/features/admin/hooks/useUsers'
 
 export function ProfilePage() {
   const navigate = useNavigate()
   const { profile, signOut, refreshProfile } = useAuthContext()
   const { team, isAdmin, isSuperAdmin, memberships } = useActiveTeam()
   const { theme, toggleTheme } = useThemeStore()
+  const { data: pending } = usePendingProfiles()
 
   const [editing, setEditing] = useState(false)
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
@@ -81,11 +84,12 @@ export function ProfilePage() {
         <div className="bg-[#161616] rounded-xl border border-[#222222] overflow-hidden">
           {isSuperAdmin && (
             <button
-              onClick={() => navigate('/huvudadmin')}
+              onClick={() => navigate('/huvudadmin', { state: pending.length ? { tab: 'users' } : undefined })}
               className="flex items-center gap-3 w-full px-4 py-3 text-white text-sm border-b border-[#222222] active:bg-[#1A1A1A]"
             >
               <Building2 size={16} className="text-[#A0A0A0]" />
               <span className="flex-1 text-left">Huvudadmin</span>
+              {pending.length > 0 && <Badge variant="danger">{pending.length} väntar</Badge>}
               <ChevronRight size={16} className="text-[#8A8A8A]" />
             </button>
           )}

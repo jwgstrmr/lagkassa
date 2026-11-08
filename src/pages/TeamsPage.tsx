@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { ChevronRight, LogOut } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -9,6 +11,53 @@ import { useAuthContext } from '@/features/auth/components/AuthProvider'
 import { FullScreenSpinner } from '@/features/auth/components/AuthGuard'
 import { useCreateTeam, useMemberships } from '@/features/teams/hooks/useTeams'
 import { useTeamStore } from '@/store/teamStore'
+
+/** Nytt konto som admin ännu inte kopplat till ett barn – barnets namn kan rättas här */
+function WaitingForLink() {
+  const { profile, refreshProfile } = useAuthContext()
+  const saved = profile?.children_note ?? ''
+  const [note, setNote] = useState(saved)
+  const [saving, setSaving] = useState(false)
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (!profile) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ children_note: note.trim() || null })
+      .eq('id', profile.id)
+    setSaving(false)
+    if (error) return toast.error('Kunde inte spara')
+    await refreshProfile()
+    toast.success('Sparat')
+  }
+
+  return (
+    <Card className="space-y-4">
+      <div className="text-center">
+        <p className="text-white font-medium">Ditt konto väntar på att kopplas till laget</p>
+        <p className="text-[#A0A0A0] text-sm mt-1">
+          Så fort ditt konto är kopplat till ditt barn kommer du in i appen.
+        </p>
+      </div>
+      <form onSubmit={save} className="space-y-3">
+        <Input
+          label="Ditt barns namn"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={200}
+          autoComplete="off"
+        />
+        {note.trim() !== saved && (
+          <Button type="submit" className="w-full" loading={saving}>
+            Spara
+          </Button>
+        )}
+      </form>
+    </Card>
+  )
+}
 
 /** Välj lag – visas också för den som ännu inte är med i något lag */
 export function TeamsPage() {
@@ -20,6 +69,8 @@ export function TeamsPage() {
   const [name, setName] = useState('')
 
   if (isLoading) return <FullScreenSpinner />
+  // Inget att välja – t.ex. när ett väntande konto precis blivit kopplat
+  if (memberships.length === 1 && !profile?.is_super_admin) return <Navigate to="/hem" replace />
 
   function create(e: React.FormEvent) {
     e.preventDefault()
@@ -56,19 +107,18 @@ export function TeamsPage() {
               </button>
             ))}
           </Card>
-        ) : (
+        ) : profile?.is_super_admin ? (
           <Card className="text-center">
-            <p className="text-white font-medium">Du är inte med i något lag än</p>
-            <p className="text-[#A0A0A0] text-sm mt-1">
-              Lagets ekonomiansvarig kan bjuda in {profile?.email ?? 'dig'}.
-            </p>
+            <p className="text-white font-medium">Det finns inga lag än</p>
           </Card>
+        ) : (
+          <WaitingForLink />
         )}
 
         {profile?.is_super_admin && (
           <Card>
             <form onSubmit={create} className="space-y-3">
-              <Input label="Nytt lag" value={name} onChange={(e) => setName(e.target.value)} placeholder="Flickor 2017" />
+              <Input label="Nytt lag" value={name} onChange={(e) => setName(e.target.value)} />
               <Button type="submit" className="w-full" loading={createTeam.isPending} disabled={!name.trim()}>
                 Skapa lag
               </Button>

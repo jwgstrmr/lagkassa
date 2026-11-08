@@ -7,6 +7,8 @@ export interface Profile {
   email: string
   /** Ser och administrerar alla lag */
   is_super_admin: boolean
+  /** Vad barnet heter enligt användaren själv – hjälper admin att koppla kontot */
+  children_note: string | null
   created_at: string
 }
 
@@ -16,6 +18,8 @@ export interface Team {
   opening_balance_ore: number
   opening_date: string | null
   created_at: string
+  /** Dit föräldrarna betalar – visas under Att betala */
+  swish_number: string | null
 }
 
 export interface TeamMembership {
@@ -28,15 +32,6 @@ export interface TeamMembership {
 export interface TeamAdmin {
   team_id: string
   profile_id: string
-}
-
-/** Barn att koppla och lag att bli ekonomiansvarig i när e-postadressen registreras */
-export interface Invite {
-  id: string
-  email: string
-  child_ids: string[]
-  admin_team_ids: string[]
-  created_at: string
 }
 
 export interface Child {

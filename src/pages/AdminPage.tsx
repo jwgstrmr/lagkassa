@@ -1,26 +1,16 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
-import { Tabs } from '@/components/ui/Tabs'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { PlayersTab } from '@/features/admin/components/PlayersTab'
-import { ParentsTab } from '@/features/admin/components/ParentsTab'
-import { TeamTab } from '@/features/admin/components/TeamTab'
 
-type Tab = 'players' | 'parents' | 'team'
-
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'players', label: 'Spelare' },
-  { value: 'parents', label: 'Föräldrar' },
-  { value: 'team', label: 'Lag' },
-]
-
-/** Det aktiva lagets administration */
+/**
+ * Det aktiva lagets spelare och deras inbetalningar. Lag, spelare, föräldrar och ingående saldo
+ * sköts under Huvudadmin – ekonomiansvarig sköter pengarna under Kassan och Händelser.
+ */
 export function AdminPage() {
   const navigate = useNavigate()
   const { isSuperAdmin } = useActiveTeam()
-  const [tab, setTab] = useState<Tab>('players')
   return (
     <div>
       <TopBar
@@ -37,10 +27,7 @@ export function AdminPage() {
           )
         }
       />
-      <Tabs value={tab} tabs={TABS} onChange={setTab} />
-      {tab === 'players' && <PlayersTab />}
-      {tab === 'parents' && <ParentsTab />}
-      {tab === 'team' && <TeamTab />}
+      <PlayersTab />
     </div>
   )
 }

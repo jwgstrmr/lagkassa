@@ -16,13 +16,6 @@ import { useCampaignParticipants, useDeleteCampaign, useSaveCampaign } from '../
 import { CAMPAIGN_TYPES } from '../lib/format'
 import type { Campaign, CampaignType } from '@/types/database'
 
-const NAME_EXAMPLE: Record<CampaignType, string> = {
-  sale: 'Bingolotter våren',
-  fee: 'Cupavgift',
-  job: 'Städning efter match',
-  other: 'Avslutning',
-}
-
 // Typerna som följs upp per barn – vad beloppet är och vad barnen gör
 const PER_CHILD: Record<Exclude<CampaignType, 'other'>, { amount: string; who: string }> = {
   sale: { amount: 'Minst per barn (kr)', who: 'Säljer' },
@@ -124,7 +117,6 @@ export function CampaignForm({ campaign, onDone }: Props) {
         label="Namn"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder={NAME_EXAMPLE[type]}
         autoFocus={!campaign}
       />
       {perChild && (
@@ -133,7 +125,7 @@ export function CampaignForm({ campaign, onDone }: Props) {
           inputMode="decimal"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder={type === 'fee' ? '0' : type === 'sale' ? 'Valfritt – t.ex. 10 lotter à 50 kr = 500' : 'Valfritt'}
+          placeholder={type === 'fee' ? '0' : 'Valfritt'}
         />
       )}
       {perChild && children.length > 0 && (
@@ -167,9 +159,6 @@ export function CampaignForm({ campaign, onDone }: Props) {
         label="Information"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder={
-          type === 'job' ? 'Var och när, samlingstid, vad barnen ska ha med sig …' : 'Vad gäller, sista dag att betala, Swish-nummer …'
-        }
         rows={6}
       />
       {error && <p className="text-[#EF4444] text-sm">{error}</p>}

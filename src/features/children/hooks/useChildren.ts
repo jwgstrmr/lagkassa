@@ -49,6 +49,19 @@ export function useGuardians() {
   })
 }
 
+/**
+ * Kopplingar till barn som finns kvar. Ett borttaget barn ligger kvar i child_guardians men ger
+ * ingen tillgång till något lag – föräldern ska då räknas som okopplad.
+ */
+export function useLiveGuardians() {
+  const { data: children } = useAllChildren()
+  const query = useGuardians()
+  const data = children && query.data
+    ? query.data.filter((g) => children.some((c) => c.id === g.child_id))
+    : undefined
+  return { ...query, data }
+}
+
 /** Inloggad användares barn i det aktiva laget – även admin kan vara förälder */
 export function useMyChildren() {
   const { user } = useAuthContext()

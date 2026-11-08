@@ -14,6 +14,7 @@ import { MyChildrenCard } from '@/features/children/components/MyChildrenCard'
 import { useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { CampaignCard } from '@/features/campaigns/components/CampaignCard'
 import { OpenDuesCard } from '@/features/campaigns/components/OpenDuesCard'
+import { ToPayCard } from '@/features/campaigns/components/ToPayCard'
 import { campaignStatus } from '@/features/campaigns/lib/format'
 import type { CampaignType, TransactionKind } from '@/types/database'
 
@@ -75,6 +76,8 @@ export function HomePage() {
             <Total label="Utgifter" ore={stats?.expense} small={opening !== 0} kind="expense" />
           </div>
         </Card>
+
+        <ToPayCard />
 
         <OpenDuesCard />
 

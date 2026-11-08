@@ -12,6 +12,8 @@ export function useMemberships() {
   return useQuery({
     queryKey: queryKeys.memberships,
     enabled: !!user,
+    // Ett nytt konto väntar på att kopplas – då släpps användaren in utan att ladda om
+    refetchInterval: (query) => (query.state.data?.length === 0 ? 20_000 : false),
     queryFn: async () => {
       const { data, error } = await supabase.rpc('my_teams')
       if (error) throw error
@@ -64,8 +66,13 @@ export function useUpdateTeam() {
       if (error) throw error
       if (!data?.length) throw new Error('Ingen behörighet')
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.memberships })
+    // Väntar in de nya lagen innan arket stängs – annars kan ett nytt tryck öppna gamla värden.
+    // Saknade inbetalningar visar också lagens namn
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.memberships }),
+        qc.invalidateQueries({ queryKey: queryKeys.openDues }),
+      ])
       toast.success('Sparat')
     },
     onError: () => toast.error('Kunde inte spara'),

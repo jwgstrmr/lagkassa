@@ -23,6 +23,8 @@ export function ConfirmDialog() {
           <Button
             variant="danger"
             onClick={() => {
+              // Arket tar emot tryck medan det glider ut – ett dubbeltryck ska inte göra det två gånger
+              if (!confirmDialog.open) return
               confirmDialog.onConfirm()
               closeConfirm()
             }}

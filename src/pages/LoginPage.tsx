@@ -41,7 +41,6 @@ export function LoginPage() {
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
-          placeholder="din@email.se"
         />
         <Input
           label="Lösenord"

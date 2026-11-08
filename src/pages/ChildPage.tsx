@@ -11,8 +11,71 @@ import { useChildren } from '@/features/children/hooks/useChildren'
 import { useCampaignParticipants, useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { signed, transactionTitle } from '@/features/transactions/lib/finance'
-import { due, dueStatus, earned, owes, paidByFamily, paidIn } from '@/features/campaigns/lib/sales'
+import { due, dueStatus, earned, owes, paidByFamily, paidIn, type Due } from '@/features/campaigns/lib/sales'
 import { dateRange } from '@/features/campaigns/lib/format'
+import type { Campaign, Transaction } from '@/types/database'
+
+/**
+ * En händelse för barnet. Det inbetalda beloppet står till höger, och bara där –
+ * statusraden säger om det är klart, och raderna visas bara när det finns fler än en.
+ */
+function CampaignPayments({ campaign, payments, paid, earned: fromChild, due: d }: {
+  campaign: Campaign
+  payments: Transaction[]
+  paid: number
+  earned: number
+  due: Due | null
+}) {
+  const single = payments.length === 1 && payments[0].kind === 'income' ? payments[0] : null
+  const when = single ? ` ${shortDate(single.date)}` : ''
+  // Klart: när, inte hur mycket. Inte klart: det som är kvar – det står ingen annanstans
+  const status = d
+    ? d.done
+      ? `${campaign.type === 'job' ? 'Ersättning mottagen' : 'Betalt'}${when}`
+      : dueStatus(d)
+    : single && `Betalt${when}`
+  // En återbetalning eller flera inbetalningar behöver sina rader
+  const rows = payments.length > 1 || payments.some((t) => t.kind === 'expense')
+
+  return (
+    <Card padding={false} className="overflow-hidden">
+      <Link to={`/handelser/${campaign.id}`} className="flex items-center gap-3 px-4 pt-4 pb-3 active:bg-[#1A1A1A]">
+        <span className="flex-1 min-w-0">
+          <span className="block text-white font-semibold truncate">{campaign.name}</span>
+          {dateRange(campaign) && <span className="block text-[#8A8A8A] text-xs">{dateRange(campaign)}</span>}
+          {status && (
+            <span
+              className={cn(
+                'block text-xs',
+                d?.done ? 'text-[#22C55E]' : d && owes(d) ? 'text-[#FFD700]' : 'text-[#8A8A8A]',
+              )}
+            >
+              {status}
+            </span>
+          )}
+          {/* Bara när händelsen haft kostnader – annars är det samma belopp som inbetalt */}
+          {paid > 0 && fromChild !== paid && (
+            <span className="block text-[#8A8A8A] text-xs">Intjänat till kassan {formatSek(fromChild)}</span>
+          )}
+        </span>
+        <span className="text-white font-semibold tabular-nums">{formatSek(paid)}</span>
+        <ChevronRight size={16} className="text-[#8A8A8A]" />
+      </Link>
+      {rows && (
+        <ul className="px-4 pb-3 space-y-1 border-t border-[#222222] pt-3">
+          {payments.map((t) => (
+            <li key={t.id} className="flex justify-between gap-3 text-sm">
+              <span className="text-[#A0A0A0] truncate">
+                {shortDate(t.date)} · {transactionTitle(t)}
+              </span>
+              <span className="text-[#A0A0A0] tabular-nums shrink-0">{formatSek(signed(t))}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  )
+}
 
 /** Vad ett barn betalat in och tjänat till kassan i lagets händelser */
 export function ChildPage() {
@@ -67,48 +130,7 @@ export function ChildPage() {
         {perCampaign.length === 0 ? (
           <p className="text-[#8A8A8A] text-sm text-center py-6">Inga inbetalningar än</p>
         ) : (
-          perCampaign.map((x) => (
-            <Card key={x.campaign.id} padding={false} className="overflow-hidden">
-              <Link
-                to={`/handelser/${x.campaign.id}`}
-                className="flex items-center gap-3 px-4 pt-4 pb-3 active:bg-[#1A1A1A]"
-              >
-                <span className="flex-1 min-w-0">
-                  <span className="block text-white font-semibold truncate">{x.campaign.name}</span>
-                  {dateRange(x.campaign) && (
-                    <span className="block text-[#8A8A8A] text-xs">{dateRange(x.campaign)}</span>
-                  )}
-                  {x.due && (
-                    <span
-                      className={cn(
-                        'block text-xs',
-                        x.due.done ? 'text-[#22C55E]' : owes(x.due) ? 'text-[#FFD700]' : 'text-[#8A8A8A]',
-                      )}
-                    >
-                      {dueStatus(x.due)}
-                    </span>
-                  )}
-                  {x.paid > 0 && (
-                    <span className="block text-[#8A8A8A] text-xs">Intjänat till kassan {formatSek(x.earned)}</span>
-                  )}
-                </span>
-                <span className="text-white font-semibold tabular-nums">{formatSek(x.paid)}</span>
-                <ChevronRight size={16} className="text-[#8A8A8A]" />
-              </Link>
-              {x.payments.length > 0 && (
-                <ul className="px-4 pb-3 space-y-1 border-t border-[#222222] pt-3">
-                  {x.payments.map((t) => (
-                    <li key={t.id} className="flex justify-between gap-3 text-sm">
-                      <span className="text-[#A0A0A0] truncate">
-                        {shortDate(t.date)} · {transactionTitle(t)}
-                      </span>
-                      <span className="text-[#A0A0A0] tabular-nums shrink-0">{formatSek(signed(t))}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          ))
+          perCampaign.map((x) => <CampaignPayments key={x.campaign.id} {...x} />)
         )}
       </div>
     </div>

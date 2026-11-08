@@ -20,20 +20,32 @@ Stacken är densamma som i training-planner: React 19, Vite, Tailwind v4, React 
 
 ## Roller
 
-- **Huvudadmin**: ser och administrerar alla lag. Skapar lag, har barnregistret (ett barn kan vara med i flera lag) och tilldelar användare som ekonomiansvariga och föräldrar.
-- **Ekonomiansvarig**: sköter ett eller flera lag – spelare, föräldrar, ingående saldo, intäkter, utgifter och händelser.
+- **Huvudadmin**: ser och administrerar alla lag. Det är bara huvudadmin som skapar lag och sätter deras namn och ingående saldo, lägger till spelare i spelarregistret (en spelare kan vara med i flera lag) och kopplar användare som föräldrar och ekonomiansvariga. Det görs under Huvudadmin, en nivå ovanför lagen – inte per lag.
+- **Ekonomiansvarig**: sköter pengarna i ett eller flera lag – intäkter, utgifter och händelser. Ser lagets spelare, deras föräldrar och inbetalningar under Admin men ändrar inte spelare, föräldrar eller laget.
 - **Förälder**: kopplas till sina barn och ser automatiskt alla lag barnen är med i – saldo, diagram, transaktioner och händelsernas totaler, men bara sina egna barns försäljning.
 
-Inbjudningar görs med e-postadress. Finns inget konto ännu sparas inbjudan och löses in när personen registrerar sig med samma adress. Det skickas inget mejl, så dela länken till `/registrera` (kopieringsknappen bredvid Bjud in).
+Alla registrerar sig själva på `/registrera` – det finns inga inbjudningar och det skickas inga mejl.
+
+Vid registreringen skriver man vad barnet heter. Ett konto som inte är kopplat till något barn eller lag kommer inte in i appen. Det hamnar under Huvudadmin → Användare → Väntar på koppling. Där väljer huvudadmin vilka barn i registret kontot ska kopplas till. Det är alltid registrets barn som kopplas – det användaren skrev är bara en hjälp och visas tillsammans med förslag på barn med liknande namn tills kontot är kopplat till ett barn. Därefter kommer användaren in, utan att behöva ladda om.
+
+Felregistreringar och dubbletter tar huvudadmin bort med soptunnan i användarens vy. Kontot försvinner ur inloggningen tillsammans med kopplingarna till barn och lag, men bokförda poster står kvar. Man kan inte ta bort sig själv, och en huvudadmin måste först förlora rollen. Personen kan registrera sig igen med samma adress.
+
+Spelare och Användare har samma lagfilter. En spelare kan vara med i flera lag, och en användare kan vara förälder till barn i flera lag och ekonomiansvarig i flera lag – allt väljs i samma vy, med det filtrerade lagets barn först.
 
 ## Pengar
 
 Det här är ingen bokföring, bara öppenhet med vad som kommer in och går ut. Belopp lagras i öre. Saldot är det ingående saldot plus alla intäkter och utgifter.
 
+Det ingående saldot sätts en gång per lag: det som fanns i kassan den dag laget började använda appen. Allt därefter bokförs i appen, så saldot räknas vidare mellan åren utan att något sätts om. På Hem visas det skilt från intäkterna, så att det syns vad laget faktiskt har tjänat.
+
 I kassans statistik räknas en händelses kostnader (t.ex. inköpet av kakorna) av mot händelsens intäkter – händelsen blir en intäkt med sitt netto, eller en utgift om den gått back. Utgifter är annars bara fristående utgifter.
 
-En händelse (kakförsäljning, bingolotter …) samlar sina intäkter och kostnader (t.ex. inköpet). Intäkter och utgifter kan få ett namn, t.ex. domare eller sponsring. I en händelse är namnet valfritt, t.ex. inköpet av kakorna. Det finns inga kategorier – händelserna är det som grupperar pengarna. Intäkter och utgifter kan kopplas till ett eller flera barn, eller till inget barn alls. Barnets intäkter är vad som betalats in för barnet. Vad barnet tjänat till kassan är barnets del av händelsens netto, fördelat efter vad barnet betalat in – går händelsen back räknas det som 0.
+En händelse (kakförsäljning, bingolotter …) samlar sina intäkter och kostnader (t.ex. inköpet). Intäkter och utgifter kan få ett namn, t.ex. domare eller sponsring. I en händelse är namnet valfritt, t.ex. inköpet av kakorna. Det finns inga kategorier – händelserna är det som grupperar pengarna. Intäkter och utgifter kan kopplas till ett eller flera barn, eller till inget barn alls. Barnets intäkter är vad som betalats in för barnet. En kostnad kopplad till ett barn i en händelse är en återbetalning (t.ex. en inställd cup) och räknas av från det barnet betalat in. Vad barnet tjänat till kassan är barnets del av händelsens netto, fördelat efter vad barnet betalat in – går händelsen back räknas det som 0.
 
 En händelse är en **försäljning** (barnen betalar in det de sålt för, eventuellt med ett minimum per barn), en **avgift** (fast belopp per barn, t.ex. cup), ett **jobb** (barnen jobbar och laget får en ersättning, eventuellt ett belopp per barn) eller **övrigt** (ingen uppföljning per barn). Vid försäljning och avgift väljs vilka barn som ska betala in, och händelsens intäkter kopplade till barnet räknas som inbetalt. Ekonomiansvarig ser vem som har betalat och vad som saknas, och föräldrar ser om deras egna barns inbetalningar är registrerade.
+
+Föräldrar ser vad pengarna i en händelse kom från och gick till: kostnader och intäkter som inte gäller något barn visas var för sig, barnens inbetalningar och återbetalningar bara som summor.
+
+Under Att betala på Hem ser föräldrar allt som återstår för de egna barnen, även i avslutade händelser, med tidigast sista dag först. Har laget ett Swish-nummer (Huvudadmin → Lag) öppnar knappen Swisha appen med numret, beloppet och barnets namn och händelsen ifyllda. Länken följer det format Swish-appen tar emot (`swish://payment?data=…`), men Swish har ingen officiell dokumentation för privata nummer – prova den i en telefon.
 
 Vid jobb väljs vilka barn som jobbar. Ersättningen bokförs som intäkter kopplade till barnen när den kommer. Den räknas till vad barnet tjänat till kassan men inte som inbetalt av familjen, och jobb hamnar aldrig bland saknade inbetalningar – föräldrarna har inget att betala.

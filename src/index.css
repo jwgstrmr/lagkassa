@@ -57,10 +57,38 @@ body {
   overscroll-behavior: none;
 }
 
-/* Datumfält i iOS Safari: har en egen minsta bredd (spräcker två fält i bredd),
-   centrerar texten och krymper när de är tomma */
-input[type="date"] { min-width: 0; min-height: 50px; }
-input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+/* Datumfält i Safari. Tailwind v4 stänger inte av den inbyggda kontrollen, så iOS skriver
+   över bredd, höjd och padding efter vår CSS: fälten spricker ut ur rutan (iOS 18.4+) eller
+   krymper (äldre), blir 31px höga och får fel indrag. Utan den ser de ut som övriga fält.
+   display får inte ändras – iOS centrerar då inte längre datumet i höjdled. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  min-height: 50px;
+  /* Mac-Safari: siffrorna i dag/månad/år blir annars ojämnt utspridda */
+  font-variant-numeric: tabular-nums;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  margin: 0;
+  text-align: left;
+  /* Ett tomt fält krymper annars ihop */
+  min-height: 1lh;
+}
+/* Mac-Safari markerar dag/månad/år med systemblått inuti den gula ramen */
+input[type="date"]::-webkit-datetime-edit-year-field:focus,
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-day-field:focus {
+  background-color: #FFD700;
+  color: #0A0A0A;
+  -webkit-text-fill-color: #0A0A0A;
+  border-radius: 4px;
+}
+html.light input[type="date"]::-webkit-datetime-edit-year-field:focus,
+html.light input[type="date"]::-webkit-datetime-edit-month-field:focus,
+html.light input[type="date"]::-webkit-datetime-edit-day-field:focus {
+  background-color: #E6C200;
+}
 
 /* Safe area helpers */
 .safe-top { padding-top: env(safe-area-inset-top); }

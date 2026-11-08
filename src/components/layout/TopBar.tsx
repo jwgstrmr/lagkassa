@@ -4,6 +4,14 @@ import { ChevronLeft } from 'lucide-react'
 import { cn, initials } from '@/lib/utils'
 import { useAuthContext } from '@/features/auth/components/AuthProvider'
 import { TeamSwitcher } from '@/features/teams/components/TeamSwitcher'
+import { usePendingProfiles } from '@/features/admin/hooks/useUsers'
+
+/** Huvudadmin har nya konton att koppla – egen komponent så att bara huvudadmin hämtar användarna */
+function PendingDot() {
+  const { data: pending } = usePendingProfiles()
+  if (!pending.length) return null
+  return <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+}
 
 interface TopBarProps {
   title?: string
@@ -77,11 +85,12 @@ export function TopBar({ title, subtitle, showBack, onBack, actions, className }
             disabled={onProfile}
             aria-label="Profil"
             className={cn(
-              'ml-2 w-8 h-8 rounded-full bg-[#FFD700]/15 flex items-center justify-center overflow-hidden shrink-0 transition-shadow',
+              'relative ml-2 w-8 h-8 rounded-full bg-[#FFD700]/15 flex items-center justify-center shrink-0 transition-shadow',
               onProfile ? 'ring-2 ring-[#FFD700]' : 'active:scale-95',
             )}
           >
             <span className="text-[#FFD700] text-xs font-bold">{initials(profile?.full_name)}</span>
+            {profile?.is_super_admin && !onProfile && <PendingDot />}
           </button>
         </div>
       </div>

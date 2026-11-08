@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { queryKeys } from '@/lib/queryKeys'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { useTeamMutation } from '@/features/teams/hooks/useTeamMutation'
-import type { Invite, Profile, TeamAdmin } from '@/types/database'
+import { useAllChildren, useLiveGuardians } from '@/features/children/hooks/useChildren'
+import type { Profile, TeamAdmin } from '@/types/database'
 
 /** Huvudadmin ser alla, ekonomiansvariga föräldrarna till sina barn (RLS) */
 export function useProfiles() {
@@ -22,10 +23,10 @@ export function useProfiles() {
 }
 
 export function useTeamAdmins() {
-  const { isAdmin, isSuperAdmin } = useActiveTeam()
+  const { isSuperAdmin } = useActiveTeam()
   return useQuery({
     queryKey: queryKeys.teamAdmins,
-    enabled: isAdmin || isSuperAdmin,
+    enabled: isSuperAdmin,
     queryFn: async () => {
       const { data, error } = await supabase.from('team_members').select('team_id, profile_id')
       if (error) throw error
@@ -34,53 +35,43 @@ export function useTeamAdmins() {
   })
 }
 
-export function useInvites() {
-  const { isAdmin, isSuperAdmin } = useActiveTeam()
-  return useQuery({
-    queryKey: queryKeys.invites,
-    enabled: isAdmin || isSuperAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase.from('invites').select('*').order('email')
-      if (error) throw error
-      return data as Invite[]
-    },
-  })
+/**
+ * Konton som inte kommer in i appen: varken huvudadmin, ekonomiansvarig eller förälder till ett
+ * barn som är med i ett lag (som is_team_member). ready är false tills allt det bygger på är hämtat –
+ * innan dess går det inte att säga vem som är kopplad.
+ */
+export function usePendingProfiles() {
+  const { data: profiles } = useProfiles()
+  const { data: admins } = useTeamAdmins()
+  const { data: guardians } = useLiveGuardians()
+  const { data: children } = useAllChildren()
+  if (!profiles || !admins || !guardians || !children) return { data: [] as Profile[], ready: false }
+
+  const inATeam = new Set(children.filter((c) => c.team_ids.length).map((c) => c.id))
+  const pending = profiles.filter(
+    (p) =>
+      !p.is_super_admin &&
+      !admins.some((a) => a.profile_id === p.id) &&
+      !guardians.some((g) => g.profile_id === p.id && inATeam.has(g.child_id)),
+  )
+  return { data: pending, ready: true }
 }
 
-const userKeys = () => [
-  queryKeys.profiles,
-  queryKeys.teamAdmins,
-  queryKeys.invites,
-  queryKeys.guardians,
-  queryKeys.memberships,
-]
+const userKeys = () => [queryKeys.profiles, queryKeys.teamAdmins, queryKeys.guardians, queryKeys.memberships]
 
 /**
- * Kopplar barn (och för huvudadmin: lag som ekonomiansvarig) till en e-postadress.
- * Utan konto sparas inbjudan – en ekonomiansvarig ersätter bara sina egna barn i den.
+ * Kontot tas bort helt – kopplingar till barn och lag följer med, bokförda poster står kvar.
+ * Försvinner ur listan direkt, så att ett nytt tryck inte hinner öppna det innan listan lästs om.
  */
-export function useInviteUser() {
+export function useDeleteUser() {
+  const qc = useQueryClient()
   return useTeamMutation(
-    async ({ email, childIds, adminTeamIds = [] }: { email: string; childIds: string[]; adminTeamIds?: string[] }) => {
-      const { data, error } = await supabase.rpc('invite_user', {
-        p_email: email,
-        p_child_ids: childIds,
-        p_admin_team_ids: adminTeamIds,
-      })
+    async (profileId: string) => {
+      const { error } = await supabase.rpc('delete_user', { p_profile_id: profileId })
       if (error) throw error
-      return data as 'added' | 'invited'
+      qc.setQueryData<Profile[]>(queryKeys.profiles, (old) => old?.filter((p) => p.id !== profileId))
     },
-    { invalidate: userKeys, error: 'Kunde inte bjuda in' },
-  )
-}
-
-export function useDeleteInvite() {
-  return useTeamMutation(
-    async (id: string) => {
-      const { error } = await supabase.from('invites').delete().eq('id', id)
-      if (error) throw error
-    },
-    { invalidate: userKeys, success: 'Inbjudan borttagen', error: 'Kunde inte ta bort' },
+    { invalidate: userKeys, success: 'Kontot är borttaget', error: 'Kunde inte ta bort kontot' },
   )
 }
 

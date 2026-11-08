@@ -138,12 +138,15 @@ export function TransactionForm({ transaction, campaignId, childId: presetChild,
         label="Namn"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder={selectedCampaign ? 'Valfritt' : kind === 'expense' ? 'Domare' : 'Sponsring'}
+        placeholder={selectedCampaign ? 'Valfritt' : undefined}
       />
 
       {canHaveChild && children.length > 0 && (
         <div className="space-y-1.5">
-          <span className="block text-[#A0A0A0] text-sm font-medium">Barn</span>
+          {/* En kostnad på ett barn räknas av från det barnet betalat in */}
+          <span className="block text-[#A0A0A0] text-sm font-medium">
+            {kind === 'expense' ? 'Återbetalning till' : 'Barn'}
+          </span>
           <div className="flex flex-wrap gap-2">
             {multi && children.length > 1 && (
               <Chip active={childIds.length === children.length} onClick={toggleAll}>
