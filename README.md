@@ -21,7 +21,7 @@ Stacken är densamma som i training-planner: React 19, Vite, Tailwind v4, React 
 ## Roller
 
 - **Huvudadmin**: ser och administrerar alla lag. Det är bara huvudadmin som skapar lag och sätter deras namn och ingående saldo, lägger till spelare i spelarregistret (en spelare kan vara med i flera lag) och kopplar användare som föräldrar och ekonomiansvariga. Det görs under Huvudadmin, en nivå ovanför lagen – inte per lag.
-- **Ekonomiansvarig**: sköter pengarna i ett eller flera lag – intäkter, utgifter och händelser. Följer upp under Admin: Uppföljning visar saknade inbetalningar och hur de pågående händelserna går, och Spelare lagets spelare, deras föräldrar och inbetalningar. Ändrar inte spelare, föräldrar eller laget.
+- **Ekonomiansvarig**: sköter pengarna i ett eller flera lag – intäkter, utgifter och händelser. Följer upp under Admin: Uppföljning visar saknade inbetalningar och hur de pågående händelserna går, Spelare lagets spelare, deras föräldrar och inbetalningar, och Statistik vad varje barn tjänat till kassan och sålt för, per år eller från start. Ändrar inte spelare, föräldrar eller laget.
 - **Förälder**: kopplas till sina barn och ser automatiskt alla lag barnen är med i – saldo, diagram, transaktioner och händelsernas totaler, men bara sina egna barns försäljning.
 
 Alla registrerar sig själva på `/registrera` – det finns inga inbjudningar och det skickas inga mejl.

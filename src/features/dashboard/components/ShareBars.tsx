@@ -23,7 +23,8 @@ export function ShareBars({ shares, kind }: { shares: Share[]; kind: Transaction
           <div className="mt-1.5 h-2 rounded-r bg-transparent">
             <div
               className="h-full rounded-r"
-              style={{ width: `${Math.max((s.amount / max) * 100, 1)}%`, backgroundColor: c[kind] }}
+              // Små belopp syns som en stump, 0 kr inte alls
+              style={{ width: `${s.amount > 0 ? Math.max((s.amount / max) * 100, 1) : 0}%`, backgroundColor: c[kind] }}
             />
           </div>
         </li>

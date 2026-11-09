@@ -6,16 +6,19 @@ import { Tabs } from '@/components/ui/Tabs'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { OverviewTab } from '@/features/admin/components/OverviewTab'
 import { PlayersTab } from '@/features/admin/components/PlayersTab'
+import { StatsTab } from '@/features/admin/components/StatsTab'
 
-type Tab = 'overview' | 'players'
+type Tab = 'overview' | 'players' | 'stats'
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'overview', label: 'Uppföljning' },
   { value: 'players', label: 'Spelare' },
+  { value: 'stats', label: 'Statistik' },
 ]
 
 /**
- * Ekonomiansvarigs uppföljning av det aktiva laget och lagets spelare med deras inbetalningar.
+ * Ekonomiansvarigs uppföljning av det aktiva laget, lagets spelare med deras inbetalningar och
+ * statistik över vad barnen bidragit med.
  * Lag, spelare, föräldrar och ingående saldo sköts under Huvudadmin – pengarna under Kassan och Händelser.
  */
 export function AdminPage() {
@@ -48,6 +51,7 @@ export function AdminPage() {
       <Tabs value={tab} tabs={TABS} onChange={setTab} />
       {tab === 'overview' && <OverviewTab />}
       {tab === 'players' && <PlayersTab />}
+      {tab === 'stats' && <StatsTab />}
     </div>
   )
 }
