@@ -12,7 +12,7 @@ import { useCampaignParticipants, useCampaigns } from '@/features/campaigns/hook
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { signed, transactionTitle } from '@/features/transactions/lib/finance'
 import { due, dueStatus, earned, owes, paidByFamily, paidIn, type Due } from '@/features/campaigns/lib/sales'
-import { dateRange } from '@/features/campaigns/lib/format'
+import { campaignStatus, dateRange } from '@/features/campaigns/lib/format'
 import type { Campaign, Transaction } from '@/types/database'
 
 /**
@@ -106,8 +106,16 @@ export function ChildPage() {
       due: due(c, id, participants, transactions),
     }))
     .filter((x) => x.payments.length > 0 || x.due)
-    // Det föräldrarna har kvar att betala först
+    // Det föräldrarna har kvar att betala först i varje avsnitt
     .sort((a, b) => Number(!!b.due && owes(b.due)) - Number(!!a.due && owes(a.due)))
+  // Samma avsnitt som under Händelser
+  const groups = [
+    { title: 'Pågående', status: 'ongoing' },
+    { title: 'Kommande', status: 'upcoming' },
+    { title: 'Avslutade', status: 'ended' },
+  ]
+    .map((g) => ({ ...g, list: perCampaign.filter((x) => campaignStatus(x.campaign) === g.status) }))
+    .filter((g) => g.list.length > 0)
 
   return (
     <div>
@@ -130,7 +138,16 @@ export function ChildPage() {
         {perCampaign.length === 0 ? (
           <p className="text-[#8A8A8A] text-sm text-center py-6">Inga inbetalningar än</p>
         ) : (
-          perCampaign.map((x) => <CampaignPayments key={x.campaign.id} {...x} />)
+          groups.map((g) => (
+            <section key={g.title}>
+              <h2 className="text-[#A0A0A0] text-xs font-semibold uppercase tracking-wider px-1 mb-2">
+                {g.title}
+              </h2>
+              <div className="space-y-2">
+                {g.list.map((x) => <CampaignPayments key={x.campaign.id} {...x} />)}
+              </div>
+            </section>
+          ))
         )}
       </div>
     </div>

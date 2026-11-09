@@ -173,15 +173,16 @@ export function UsersTab({ teamId, onTeamChange }: { teamId: string | null; onTe
   const childNames = (ids: string[]) =>
     children.filter((c) => ids.includes(c.id)).map((c) => c.name).join(', ')
 
-  // Som spelarnas rader: lagen först, sedan barnen
+  // Som spelarnas rader: lagen först, sedan barnen. Lagen som ekonomiansvarig står med bland lagen
   function summary(profileId: string) {
-    const adminTeamIds = adminTeamsOf(profileId)
     return [
-      teamNames(parentTeamsOf(profileId)),
+      teamNames([...parentTeamsOf(profileId), ...adminTeamsOf(profileId)]),
       childNames(childrenOf(profileId)),
-      adminTeamIds.length ? `Ekonomiansvarig: ${teamNames(adminTeamIds)}` : '',
     ].filter(Boolean).join(' · ')
   }
+  // Med ett lag valt i filtret: ekonomiansvarig just i det laget
+  const isTreasurer = (profileId: string) =>
+    teamId ? adminTeamsOf(profileId).includes(teamId) : adminTeamsOf(profileId).length > 0
 
   return (
     <div className="py-4 space-y-3">
@@ -236,7 +237,13 @@ export function UsersTab({ teamId, onTeamChange }: { teamId: string | null; onTe
                   <span className="block text-white text-sm font-medium truncate">{displayName(p)}</span>
                   <span className="block text-[#8A8A8A] text-xs truncate">{summary(p.id) || p.email}</span>
                 </span>
-                {p.is_super_admin && <Badge variant="accent">Huvudadmin</Badge>}
+                {/* Under varandra, så att namnet inte trängs undan när någon har båda rollerna */}
+                {(p.is_super_admin || isTreasurer(p.id)) && (
+                  <span className="flex flex-col items-end gap-1 shrink-0">
+                    {p.is_super_admin && <Badge variant="accent">Huvudadmin</Badge>}
+                    {isTreasurer(p.id) && <Badge>Ekonomiansvarig</Badge>}
+                  </span>
+                )}
               </button>
             ))}
           </Card>
