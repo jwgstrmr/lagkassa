@@ -51,8 +51,8 @@ function names(list: string[]): string {
 }
 
 /**
- * En händelse – hur många som är klara och vad som är kvar. Gult när händelsen är slut och
- * pengarna borde ha kommit in, annars är det bara läget
+ * En händelse – hur många som är klara och vad som är kvar. Gult och "saknas" när händelsen är
+ * slut och pengarna borde ha kommit in, annars är det bara läget
  */
 function EventRow({ progress: { campaign: c, dues, open }, detail, overdue }: {
   progress: EventProgress
@@ -74,7 +74,7 @@ function EventRow({ progress: { campaign: c, dues, open }, detail, overdue }: {
             <span className={cn('block text-sm font-semibold tabular-nums', overdue ? 'text-[#FFD700]' : 'text-white')}>
               {formatSek(remaining)}
             </span>
-            <span className="block text-[#A0A0A0] text-xs">kvar</span>
+            <span className="block text-[#A0A0A0] text-xs">{overdue ? 'saknas' : 'kvar'}</span>
           </span>
         )}
         <ChevronRight size={16} className="text-[#8A8A8A] shrink-0" />
@@ -123,7 +123,7 @@ function OtherTeams({ dues }: { dues: OpenDue[] }) {
             {remaining > 0 && (
               <span className="text-right shrink-0">
                 <span className="block text-[#FFD700] text-sm font-semibold tabular-nums">{formatSek(remaining)}</span>
-                <span className="block text-[#A0A0A0] text-xs">kvar</span>
+                <span className="block text-[#A0A0A0] text-xs">saknas</span>
               </span>
             )}
             <ChevronRight size={16} className="text-[#8A8A8A] shrink-0" />

@@ -36,7 +36,7 @@ export function PlayersTab() {
     const open = ended.flatMap((c) => due(c, childId, participants, transactions) ?? []).filter((d) => !d.done)
     if (!open.length) return null
     const remaining = open.reduce((sum, d) => sum + d.remaining, 0)
-    return remaining > 0 ? `${formatSek(remaining)} kvar` : 'Inget registrerat'
+    return remaining > 0 ? `${formatSek(remaining)} saknas` : 'Inget registrerat'
   }
 
   return (
