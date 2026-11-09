@@ -94,7 +94,7 @@ function Ledger({ linked, job, action, onEdit }: {
         <div className="divide-y divide-[#222222]">
           {fromChildren.length > 0 && (
             <SumRow
-              title={job ? 'Ersättning' : 'Inbetalningar från barnen'}
+              title={job ? 'Ersättning' : 'Inbetalningar'}
               detail={kids(fromChildren)}
               kind="income"
               ore={sum(fromChildren)}
