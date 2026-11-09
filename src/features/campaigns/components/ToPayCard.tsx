@@ -61,7 +61,7 @@ export function ToPayCard() {
           </div>
         ))}
       </div>
-      {/* I en dator öppnar knappen inget – numret går att kopiera */}
+      {/* I en dator öppnar knappen bara Swish webbsida – numret går att kopiera */}
       {team?.swish_number && (
         <button
           onClick={() => copy(team.swish_number!)}

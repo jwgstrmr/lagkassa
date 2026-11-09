@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { Plus, Trash2, Users } from 'lucide-react'
+import { Trash2, Users } from 'lucide-react'
+import { FAB } from '@/components/layout/FAB'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -106,11 +107,7 @@ export function RegistryTab({ teamId, onTeamChange }: { teamId: string | null; o
     <div className="py-4 space-y-3">
       <TeamFilter value={teamId} onChange={onTeamChange} />
 
-      <div className="px-4 space-y-3">
-        <Button variant="secondary" className="w-full" onClick={() => setSheet('new')}>
-          <Plus size={18} className="mr-1" /> Ny spelare
-        </Button>
-
+      <div className="px-4">
         {isLoading ? (
           <ListSkeleton rows={4} />
         ) : !shown?.length ? (
@@ -133,6 +130,8 @@ export function RegistryTab({ teamId, onTeamChange }: { teamId: string | null; o
           </Card>
         )}
       </div>
+
+      <FAB onClick={() => setSheet('new')} label="Ny spelare" />
 
       <BottomSheet isOpen={sheet !== null} onClose={() => setSheet(null)} title={sheet === 'new' ? 'Ny spelare' : 'Spelare'}>
         {sheet !== null && (

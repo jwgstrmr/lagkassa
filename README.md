@@ -46,6 +46,6 @@ En händelse är en **försäljning** (barnen betalar in det de sålt för, even
 
 Föräldrar ser vad pengarna i en händelse kom från och gick till: kostnader och intäkter som inte gäller något barn visas var för sig, barnens inbetalningar och återbetalningar bara som summor.
 
-Under Att betala på Hem ser föräldrar allt som återstår för de egna barnen, även i avslutade händelser, med tidigast sista dag först. Har laget ett Swish-nummer (Huvudadmin → Lag) öppnar knappen Swisha appen med numret, beloppet och barnets namn och händelsen ifyllda. Länken följer det format Swish-appen tar emot (`swish://payment?data=…`), men Swish har ingen officiell dokumentation för privata nummer – prova den i en telefon.
+Under Att betala på Hem ser föräldrar allt som återstår för de egna barnen, även i avslutade händelser, med tidigast sista dag först. Har laget ett Swish-nummer (Huvudadmin → Lag) öppnar knappen Swisha appen med numret, beloppet och barnets namn och händelsen ifyllda. Länken följer formatet i Swish dokumentation för QR-koder (`https://app.swish.nu/1/p/sw/?sw=…&amt=…&msg=…`), med mobilnummer skrivna som 4670…. Det äldre `swish://payment?data=…` ger "Felaktig länk" i iPhone.
 
 Vid jobb väljs vilka barn som jobbar. Ersättningen bokförs som intäkter kopplade till barnen när den kommer. Den räknas till vad barnet tjänat till kassan men inte som inbetalt av familjen, och jobb hamnar aldrig bland saknade inbetalningar – föräldrarna har inget att betala.

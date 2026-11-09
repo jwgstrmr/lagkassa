@@ -177,6 +177,7 @@ export function TransactionsPage() {
                     <TransactionRow
                       key={e.transaction.id}
                       transaction={e.transaction}
+                      icon
                       onClick={isAdmin ? () => setEditing(e.transaction) : undefined}
                     />
                   ),

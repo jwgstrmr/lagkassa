@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { FAB } from '@/components/layout/FAB'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -70,35 +71,37 @@ function TeamForm({ team, onDone }: { team: Team; onDone: () => void }) {
   )
 }
 
+/** Nytt lag – bara namnet, resten ställs in genom att trycka på laget i listan */
+function NewTeamForm({ onDone }: { onDone: () => void }) {
+  const create = useCreateTeam()
+  const [name, setName] = useState('')
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) return
+    create.mutate(name.trim(), { onSuccess: onDone })
+  }
+
+  return (
+    <form onSubmit={submit} className="px-4 pb-6 space-y-4">
+      <Input label="Lagets namn" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <Button type="submit" className="w-full" loading={create.isPending} disabled={!name.trim()}>
+        Skapa
+      </Button>
+    </form>
+  )
+}
+
 /** Alla lag – skapa nya och tryck på ett lag för att ändra namn och ingående saldo */
 export function AllTeamsTab() {
   const { memberships } = useActiveTeam()
   const { data: children = [] } = useAllChildren()
   const { data: admins = [] } = useTeamAdmins()
   const { data: profiles = [] } = useProfiles()
-  const createTeam = useCreateTeam()
-  const [name, setName] = useState('')
-  const [open, setOpen] = useState<Team | null>(null)
-
-  function create(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) return
-    createTeam.mutate(name.trim(), { onSuccess: () => setName('') })
-  }
+  const [open, setOpen] = useState<Team | 'new' | null>(null)
 
   return (
-    <div className="p-4 space-y-4">
-      <Card>
-        <form onSubmit={create} className="flex gap-2 items-end">
-          <div className="flex-1">
-            <Input label="Nytt lag" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <Button type="submit" loading={createTeam.isPending} disabled={!name.trim()} className="h-[50px]">
-            Skapa
-          </Button>
-        </form>
-      </Card>
-
+    <div className="p-4">
       <Card padding={false} className="overflow-hidden divide-y divide-[#222222]">
         {memberships.map(({ team }) => {
           const players = children.filter((c) => c.team_ids.includes(team.id)).length
@@ -125,8 +128,14 @@ export function AllTeamsTab() {
         })}
       </Card>
 
-      <BottomSheet isOpen={open !== null} onClose={() => setOpen(null)} title="Lag">
-        {open && <TeamForm key={open.id} team={open} onDone={() => setOpen(null)} />}
+      <FAB onClick={() => setOpen('new')} label="Nytt lag" />
+
+      <BottomSheet isOpen={open !== null} onClose={() => setOpen(null)} title={open === 'new' ? 'Nytt lag' : 'Lag'}>
+        {open === 'new' ? (
+          <NewTeamForm onDone={() => setOpen(null)} />
+        ) : (
+          open && <TeamForm key={open.id} team={open} onDone={() => setOpen(null)} />
+        )}
       </BottomSheet>
     </div>
   )
