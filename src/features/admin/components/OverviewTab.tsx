@@ -182,7 +182,7 @@ export function OverviewTab() {
                 // Ersättningen för ett jobb kommer från den som anlitat laget, inte från barnen
                 p.campaign.type === 'job'
                   ? 'Väntar på ersättning'
-                  : names(p.open.map((d) => children.find((ch) => ch.id === d.childId)?.name ?? ''))
+                  : `Ej betalt: ${names(p.open.map((d) => children.find((ch) => ch.id === d.childId)?.name ?? ''))}`
               }
               overdue
             />
