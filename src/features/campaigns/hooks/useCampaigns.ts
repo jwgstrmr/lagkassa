@@ -5,6 +5,7 @@ import { queryKeys } from '@/lib/queryKeys'
 import { useTeamStore } from '@/store/teamStore'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
 import { assertRows, useTeamMutation } from '@/features/teams/hooks/useTeamMutation'
+import { campaignStatus } from '../lib/format'
 import type { Campaign, CampaignParticipant, CampaignType } from '@/types/database'
 
 export function useCampaigns() {
@@ -151,9 +152,13 @@ export interface OpenDue {
   child_name: string
   expected_ore: number | null
   paid_ore: number
+  end_date: string | null
 }
 
-/** Barn som inte betalat klart, i alla lag där man är ekonomiansvarig */
+/**
+ * Barn som inte betalat klart i avslutade händelser, i alla lag där man är ekonomiansvarig.
+ * Under en pågående händelse är det väntat att alla inte betalat än.
+ */
 export function useOpenDues() {
   const { isAdmin } = useActiveTeam()
   return useQuery({
@@ -162,7 +167,16 @@ export function useOpenDues() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('open_dues')
       if (error) throw error
-      return data as OpenDue[]
+      const dues = data as Omit<OpenDue, 'end_date'>[]
+      const ids = [...new Set(dues.map((d) => d.campaign_id))]
+      if (!ids.length) return []
+      // Funktionen har inte händelsens datum – det hämtas här i stället för att ändra databasen
+      const { data: ends, error: endsError } = await supabase.from('campaigns').select('id, end_date').in('id', ids)
+      if (endsError) throw endsError
+      const endDate = new Map((ends as { id: string; end_date: string | null }[]).map((c) => [c.id, c.end_date]))
+      return dues
+        .map((d): OpenDue => ({ ...d, end_date: endDate.get(d.campaign_id) ?? null }))
+        .filter((d) => campaignStatus({ start_date: null, end_date: d.end_date }) === 'ended')
     },
   })
 }

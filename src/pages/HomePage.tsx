@@ -13,7 +13,6 @@ import { KIND_TEXT } from '@/features/transactions/lib/colors'
 import { MyChildrenCard } from '@/features/children/components/MyChildrenCard'
 import { useCampaigns } from '@/features/campaigns/hooks/useCampaigns'
 import { CampaignCard } from '@/features/campaigns/components/CampaignCard'
-import { OpenDuesCard } from '@/features/campaigns/components/OpenDuesCard'
 import { ToPayCard } from '@/features/campaigns/components/ToPayCard'
 import { campaignStatus } from '@/features/campaigns/lib/format'
 import type { CampaignType, TransactionKind } from '@/types/database'
@@ -78,8 +77,6 @@ export function HomePage() {
         </Card>
 
         <ToPayCard />
-
-        <OpenDuesCard />
 
         {ongoing.map((g) => (
           <section key={g.type}>

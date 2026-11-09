@@ -3,8 +3,7 @@ import { Briefcase, CalendarDays, Check, ChevronRight, ShoppingBag, Ticket, type
 import { Card } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 import { formatSek } from '@/lib/money'
-import { useActiveTeam } from '@/features/teams/hooks/useTeams'
-import { useChildren, useMyChildren } from '@/features/children/hooks/useChildren'
+import { useMyChildren } from '@/features/children/hooks/useChildren'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { useCampaignParticipants } from '../hooks/useCampaigns'
 import { due, dueStatus, owes, paidIn, type Due } from '../lib/sales'
@@ -20,21 +19,17 @@ function statusLabel(d: Due): string {
   return `${d.campaign.type === 'fee' ? 'Betalt' : 'Inbetalt'} ${formatSek(d.paid)}`
 }
 
-/** En händelse i en lista – med de egna barnens betalstatus och, för admin, hur många som betalat */
+/**
+ * En händelse i en lista – med de egna barnens betalstatus. Likadan för alla, ekonomiansvarig
+ * följer upp hela laget under Admin
+ */
 export function CampaignCard({ campaign: c }: { campaign: Campaign }) {
-  const { isAdmin } = useActiveTeam()
   const { data: transactions = [] } = useTransactions()
   const { data: participants = [] } = useCampaignParticipants()
   const { data: myChildren } = useMyChildren()
-  const { data: teamChildren = [] } = useChildren()
 
   const Icon = TYPE_ICONS[c.type]
   const meta = [campaignTypeLabel(c.type), shortRange(c)].filter(Boolean).join(' · ')
-  const dues = participants
-    // Barn som tagits bort ur laget räknas inte
-    .filter((p) => p.campaign_id === c.id && teamChildren.some((ch) => ch.id === p.child_id))
-    .flatMap((p) => due(c, p.child_id, participants, transactions) ?? [])
-  const paidCount = dues.filter((d) => d.done).length
 
   // De egna barnens status – det föräldern vill kontrollera. Grått när föräldern inte har något att göra
   const mine = myChildren.flatMap((child) => {
@@ -55,26 +50,9 @@ export function CampaignCard({ campaign: c }: { campaign: Campaign }) {
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold truncate">{c.name}</p>
             <p className="text-[#8A8A8A] text-xs mt-0.5 truncate">{meta}</p>
-            {isAdmin && !c.end_date && c.type !== 'other' && (
-              <p className="text-[#F97316] text-xs mt-0.5">Saknar till-datum – avslutas aldrig</p>
-            )}
           </div>
           <ChevronRight size={16} className="text-[#8A8A8A] shrink-0" />
         </div>
-
-        {isAdmin && dues.length > 0 && (
-          <div className="flex items-center gap-3 px-4 pb-4 -mt-1">
-            <div className="flex-1 h-1.5 rounded-full bg-[#222222] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-[#22C55E] transition-all"
-                style={{ width: `${(paidCount / dues.length) * 100}%` }}
-              />
-            </div>
-            <span className="text-[#A0A0A0] text-xs tabular-nums shrink-0">
-              {paidCount}/{dues.length} {c.type === 'job' ? 'utbetalt' : 'betalt'}
-            </span>
-          </div>
-        )}
 
         {mine.length > 0 && (
           <div className="border-t border-[#222222] divide-y divide-[#222222]">

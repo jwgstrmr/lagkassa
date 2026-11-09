@@ -1,16 +1,34 @@
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
+import { Tabs } from '@/components/ui/Tabs'
 import { useActiveTeam } from '@/features/teams/hooks/useTeams'
+import { OverviewTab } from '@/features/admin/components/OverviewTab'
 import { PlayersTab } from '@/features/admin/components/PlayersTab'
 
+type Tab = 'overview' | 'players'
+
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'overview', label: 'Översikt' },
+  { value: 'players', label: 'Spelare' },
+]
+
 /**
- * Det aktiva lagets spelare och deras inbetalningar. Lag, spelare, föräldrar och ingående saldo
- * sköts under Huvudadmin – ekonomiansvarig sköter pengarna under Kassan och Händelser.
+ * Ekonomiansvarigs uppföljning av det aktiva laget och lagets spelare med deras inbetalningar.
+ * Lag, spelare, föräldrar och ingående saldo sköts under Huvudadmin – pengarna under Kassan och Händelser.
  */
 export function AdminPage() {
   const navigate = useNavigate()
+  const { pathname, state } = useLocation()
   const { isSuperAdmin } = useActiveTeam()
+  const [tab, setTab] = useState<Tab>((state as { tab?: Tab } | null)?.tab ?? 'overview')
+
+  // Fliken sparas i historiken – tillbaka från en händelse eller ett barn hamnar man där man var
+  useEffect(() => {
+    navigate(pathname, { replace: true, state: { tab } })
+  }, [navigate, pathname, tab])
+
   return (
     <div>
       <TopBar
@@ -27,7 +45,9 @@ export function AdminPage() {
           )
         }
       />
-      <PlayersTab />
+      <Tabs value={tab} tabs={TABS} onChange={setTab} />
+      {tab === 'overview' && <OverviewTab />}
+      {tab === 'players' && <PlayersTab />}
     </div>
   )
 }

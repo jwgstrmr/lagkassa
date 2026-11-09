@@ -21,7 +21,7 @@ Stacken är densamma som i training-planner: React 19, Vite, Tailwind v4, React 
 ## Roller
 
 - **Huvudadmin**: ser och administrerar alla lag. Det är bara huvudadmin som skapar lag och sätter deras namn och ingående saldo, lägger till spelare i spelarregistret (en spelare kan vara med i flera lag) och kopplar användare som föräldrar och ekonomiansvariga. Det görs under Huvudadmin, en nivå ovanför lagen – inte per lag.
-- **Ekonomiansvarig**: sköter pengarna i ett eller flera lag – intäkter, utgifter och händelser. Ser lagets spelare, deras föräldrar och inbetalningar under Admin men ändrar inte spelare, föräldrar eller laget.
+- **Ekonomiansvarig**: sköter pengarna i ett eller flera lag – intäkter, utgifter och händelser. Följer upp under Admin: Översikt visar saknade inbetalningar och hur de pågående händelserna går, och Spelare lagets spelare, deras föräldrar och inbetalningar. Ändrar inte spelare, föräldrar eller laget.
 - **Förälder**: kopplas till sina barn och ser automatiskt alla lag barnen är med i – saldo, diagram, transaktioner och händelsernas totaler, men bara sina egna barns försäljning.
 
 Alla registrerar sig själva på `/registrera` – det finns inga inbjudningar och det skickas inga mejl.
@@ -42,7 +42,9 @@ I kassans statistik räknas en händelses kostnader (t.ex. inköpet av kakorna) 
 
 En händelse (kakförsäljning, bingolotter …) samlar sina intäkter och kostnader (t.ex. inköpet). Intäkter och utgifter kan få ett namn, t.ex. domare eller sponsring. I en händelse är namnet valfritt, t.ex. inköpet av kakorna. Det finns inga kategorier – händelserna är det som grupperar pengarna. Intäkter och utgifter kan kopplas till ett eller flera barn, eller till inget barn alls. Barnets intäkter är vad som betalats in för barnet. En kostnad kopplad till ett barn i en händelse är en återbetalning (t.ex. en inställd cup) och räknas av från det barnet betalat in. Vad barnet tjänat till kassan är barnets del av händelsens netto, fördelat efter vad barnet betalat in – går händelsen back räknas det som 0.
 
-En händelse är en **försäljning** (barnen betalar in det de sålt för, eventuellt med ett minimum per barn), en **avgift** (fast belopp per barn, t.ex. cup), ett **jobb** (barnen jobbar och laget får en ersättning, eventuellt ett belopp per barn) eller **övrigt** (ingen uppföljning per barn). Vid försäljning och avgift väljs vilka barn som ska betala in, och händelsens intäkter kopplade till barnet räknas som inbetalt. Ekonomiansvarig ser vem som har betalat och vad som saknas, och föräldrar ser om deras egna barns inbetalningar är registrerade.
+En händelse är en **försäljning** (barnen betalar in det de sålt för, eventuellt med ett minimum per barn), en **avgift** (fast belopp per barn, t.ex. cup), ett **jobb** (barnen jobbar och laget får en ersättning, eventuellt ett belopp per barn) eller **övrigt** (ingen uppföljning per barn). Vid försäljning och avgift väljs vilka barn som ska betala in, och händelsens intäkter kopplade till barnet räknas som inbetalt. Ekonomiansvarig ser vem som har betalat och vad som saknas i händelsen, och föräldrar ser om deras egna barns inbetalningar är registrerade.
+
+Hem och Händelser ser likadana ut för ekonomiansvarig som för föräldrarna. Uppföljningen ligger under Admin → Översikt. Avslutade visar försäljningar och avgifter som är slut men där barn inte betalat klart, med det som slutade först överst – under en pågående händelse är det väntat att alla inte betalat än. Pågående visar hur många som är klara och vad som är kvar, med det som slutar först överst. Andra lag man är ekonomiansvarig för visas som en rad per lag med avslutade händelser där inbetalningar saknas, och ett tryck byter till laget. Siffran på Admin i menyn är antalet sådana händelser i alla ens lag.
 
 Föräldrar ser vad pengarna i en händelse kom från och gick till: kostnader och intäkter som inte gäller något barn visas var för sig, barnens inbetalningar och återbetalningar bara som summor.
 
