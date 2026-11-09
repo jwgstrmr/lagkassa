@@ -156,8 +156,8 @@ export interface OpenDue {
 }
 
 /**
- * Barn som inte betalat klart i avslutade händelser, i alla lag där man är ekonomiansvarig.
- * Under en pågående händelse är det väntat att alla inte betalat än.
+ * Barn som inte betalat klart i avslutade händelser, eller vars ersättning för ett jobb inte kommit,
+ * i alla lag där man är ekonomiansvarig. Under en pågående händelse är det väntat att alla inte betalat än.
  */
 export function useOpenDues() {
   const { isAdmin } = useActiveTeam()

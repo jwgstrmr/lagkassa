@@ -10,7 +10,7 @@ import { PlayersTab } from '@/features/admin/components/PlayersTab'
 type Tab = 'overview' | 'players'
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'overview', label: 'Översikt' },
+  { value: 'overview', label: 'Uppföljning' },
   { value: 'players', label: 'Spelare' },
 ]
 

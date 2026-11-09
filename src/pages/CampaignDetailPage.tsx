@@ -116,7 +116,7 @@ export function CampaignDetailPage() {
     sheet?.type === 'campaign'
       ? 'Ändra händelse'
       : sheet?.type === 'bulk'
-        ? job ? 'Ersättning per barn' : 'Inbetalningar per barn'
+        ? job ? 'Registrera ersättningar' : 'Registrera inbetalningar'
         : sheet?.transaction
           ? 'Ändra'
           : sheet?.childId ? (job ? 'Ny ersättning' : 'Ny inbetalning') : 'Lägg till'
@@ -161,11 +161,11 @@ export function CampaignDetailPage() {
           <Card padding={false} className="overflow-hidden">
             <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">
               <h2 className="text-white font-semibold">
-                {isAdmin ? 'Per barn' : children.length === 1 ? 'Mitt barn' : 'Mina barn'}
+                {isAdmin ? 'Deltagare' : children.length === 1 ? 'Mitt barn' : 'Mina barn'}
               </h2>
               {isAdmin && (
                 <Button size="sm" variant="secondary" onClick={() => setSheet({ type: 'bulk' })}>
-                  <Users size={16} className="mr-1" /> Fyll i per barn
+                  <Users size={16} className="mr-1" /> {job ? 'Registrera ersättningar' : 'Registrera inbetalningar'}
                 </Button>
               )}
             </div>

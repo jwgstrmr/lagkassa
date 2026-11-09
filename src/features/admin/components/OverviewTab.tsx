@@ -59,8 +59,8 @@ function EventRow({ progress: { campaign: c, dues, open }, detail, overdue }: {
   detail: string | null
   overdue?: boolean
 }) {
-  // Ett jobbs ersättning betalas av den som anlitat laget – inget som saknas från familjerna
-  const remaining = open.filter(owes).reduce((sum, d) => sum + d.remaining, 0)
+  // Ett jobbs ersättning betalas av den som anlitat laget – den saknas först när jobbet är slut
+  const remaining = open.filter((d) => overdue || owes(d)).reduce((sum, d) => sum + d.remaining, 0)
   return (
     <Link to={`/handelser/${c.id}`} className="block px-4 py-3 active:bg-[#1A1A1A]">
       <span className="flex items-center gap-3">
@@ -135,8 +135,8 @@ function OtherTeams({ dues }: { dues: OpenDue[] }) {
 }
 
 /**
- * Ekonomiansvarigs uppföljning i det aktiva laget: avslutade händelser där barn inte betalat klart,
- * och hur de pågående går. Övrigt följs inte upp per barn och visas inte.
+ * Ekonomiansvarigs uppföljning i det aktiva laget: avslutade händelser där barn inte betalat klart
+ * eller ett jobbs ersättning inte kommit, och hur de pågående går. Övrigt följs inte upp per barn och visas inte.
  */
 export function OverviewTab() {
   const { teamId } = useActiveTeam()
@@ -161,8 +161,7 @@ export function OverviewTab() {
     (a.campaign.end_date ?? '9999').localeCompare(b.campaign.end_date ?? '9999')
   const tracked = campaigns.filter((c) => c.type !== 'other').map(progress)
   const ended = tracked
-    .filter((p) => (p.campaign.type === 'sale' || p.campaign.type === 'fee') && p.open.length > 0)
-    .filter((p) => campaignStatus(p.campaign) === 'ended')
+    .filter((p) => p.open.length > 0 && campaignStatus(p.campaign) === 'ended')
     .sort(byEndDate)
   const ongoing = tracked.filter((p) => campaignStatus(p.campaign) === 'ongoing').sort(byEndDate)
   const otherTeams = openDues.filter((d) => d.team_id !== teamId)
@@ -179,7 +178,12 @@ export function OverviewTab() {
             <EventRow
               key={p.campaign.id}
               progress={p}
-              detail={names(p.open.map((d) => children.find((ch) => ch.id === d.childId)?.name ?? ''))}
+              detail={
+                // Ersättningen för ett jobb kommer från den som anlitat laget, inte från barnen
+                p.campaign.type === 'job'
+                  ? 'Väntar på ersättning'
+                  : names(p.open.map((d) => children.find((ch) => ch.id === d.childId)?.name ?? ''))
+              }
               overdue
             />
           ))}
