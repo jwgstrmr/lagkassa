@@ -80,10 +80,11 @@ export function owes(d: Due): boolean {
 
 /** "200 kr kvar av 400 kr", "Betalt 400 kr", "300 kr kvar till minst 500 kr", "Inget registrerat än" … */
 export function dueStatus(d: Due): string {
+  // Om ersättningen är registrerad, inte vad barnet gör – efter jobbet borde den ha kommit
   if (d.campaign.type === 'job') {
     if (d.done) return `Ersättning ${formatSek(d.paid)}`
-    const status = campaignStatus(d.campaign)
-    return status === 'upcoming' ? 'Ska jobba' : status === 'ongoing' ? 'Jobbar' : 'Väntar på ersättning'
+    if (d.paid > 0 && d.expected) return `Ersättning ${formatSek(d.paid)} av ${formatSek(d.expected)}`
+    return campaignStatus(d.campaign) === 'ended' ? 'Väntar på ersättning' : 'Ingen ersättning än'
   }
   // Försäljningens minimum får överskridas – visa vad som faktiskt är inbetalt
   if (d.expected && d.campaign.type === 'sale') {

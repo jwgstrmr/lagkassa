@@ -12,7 +12,7 @@ import type { Campaign, CampaignType } from '@/types/database'
 
 const TYPE_ICONS: Record<CampaignType, LucideIcon> = { sale: ShoppingBag, fee: Ticket, job: Briefcase, other: CalendarDays }
 
-/** Kort status till etiketten – "300 kr kvar", "Betalt 400 kr", "Ej registrerat", "Jobbar" */
+/** Kort status till etiketten – "300 kr kvar", "Betalt 400 kr", "Ej registrerat", "Ingen ersättning än" */
 function statusLabel(d: Due): string {
   if (d.campaign.type === 'job') return dueStatus(d)
   if (!d.done) return d.expected ? `${formatSek(d.remaining)} kvar` : 'Ej registrerat'
