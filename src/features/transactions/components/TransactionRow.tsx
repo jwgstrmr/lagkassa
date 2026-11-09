@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatSek } from '@/lib/money'
 import { shortDate } from '@/lib/date'
@@ -26,11 +26,14 @@ interface Props {
   child?: Child
   /** I Kassan blandas raderna med händelser, som har en ikon – då får intäkter och utgifter också en */
   icon?: boolean
+  /** I stället för namnet eller barnet, t.ex. "Inbetalning" i en lista som redan gäller ett barn */
+  title?: string
+  /** Raden går att trycka på för att ändra posten – den får då en pil */
   onClick?: () => void
 }
 
-export function TransactionRow({ transaction: t, child, icon, onClick }: Props) {
-  const title = transactionTitle(t, child)
+export function TransactionRow({ transaction: t, child, icon, title: titleOverride, onClick }: Props) {
+  const title = titleOverride ?? transactionTitle(t, child)
   const Icon = t.kind === 'income' ? ArrowDownLeft : ArrowUpRight
   const content = (
     <>
@@ -44,6 +47,7 @@ export function TransactionRow({ transaction: t, child, icon, onClick }: Props) 
         </span>
       </span>
       <SignedAmount kind={t.kind} ore={t.amount_ore} className="text-sm" />
+      {onClick && <ChevronRight size={16} className="text-[#8A8A8A] shrink-0 -mr-1" />}
     </>
   )
 
